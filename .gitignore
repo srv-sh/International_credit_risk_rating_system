@@ -1,0 +1,9 @@
+# Ignore Python bytecode files
+__pycache__/
+*.py[cod]
+
+# Ignore all .pyc files in any subdirectory
+**/*.pyc
+
+# If you want to specifically ignore .pyc files in the src/utils/__pycache__/ folder
+src/utils/__pycache__/*.pyc
