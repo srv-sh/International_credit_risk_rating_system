@@ -38,6 +38,11 @@ class TableStuctureRecognisation():
         x_c, y_c, w, h = x.unbind(-1)
         b = [(x_c - 0.5 * w), (y_c - 0.5 * h), (x_c + 0.5 * w), (y_c + 0.5 * h)]
         return torch.stack(b, dim=1)
+    
+    def non_max_suppression(self, boxes_tensor, scores_tensor, iou_threshold = 0.8):
+        nms_indices = torch.ops.torchvision.nms(boxes_tensor, scores_tensor, iou_threshold=iou_threshold)
+        nms_indices = nms_indices.tolist()
+        return nms_indices
         
     def outputs_to_objects(self, outputs, img_size):
         m = outputs.logits.softmax(-1).max(-1)
@@ -47,13 +52,40 @@ class TableStuctureRecognisation():
         pred_bboxes = [elem.tolist() for elem in self.rescale_bboxes(pred_bboxes, img_size)]
 
         objects = []
+
+        ######## apply non-max-suppression technique for detect bounding box accuractly ########
+        # nms_indices = self.non_max_suppression( boxes_tensor=torch.tensor( pred_bboxes,dtype=torch.float32), scores_tensor=torch.tensor( pred_scores,dtype=torch.float32))
+        # pred_bboxes= [pred_bboxes[i] for i in nms_indices]
+        # pred_labels = [pred_labels[i] for i in nms_indices]
+        # pred_scores = [pred_scores[i] for i in nms_indices]
+        ##########################################################################################
+
+
         for label, score, bbox in zip(pred_labels, pred_scores, pred_bboxes):
             class_label = self.structure_id2label[int(label)]
             if not class_label == 'no object':
                 objects.append({'label': class_label, 'score': float(score),
                                 'bbox': [float(elem) for elem in bbox]})
+        # return objects
 
-        return objects
+                
+        boxes = [obj['bbox'] for obj in objects if obj['label'] == "table row"]
+        scores = [obj['score'] for obj in objects if obj['label'] == "table row"]
+        
+        
+        ######## apply non-max-suppression technique for detect bounding box accuractly ########
+        nms_indices = self.non_max_suppression( boxes_tensor=torch.tensor( boxes,dtype=torch.float32), scores_tensor=torch.tensor( scores,dtype=torch.float32))
+        scores  = [scores[i] for i in nms_indices]
+        # objects = [objects[i] for i in nms_indices]
+        n_objects =[]
+        for obj in objects:
+            if obj['label'] != "table row":
+                n_objects.append(obj)
+            elif obj['label'] == "table row" and obj['score'] in scores :
+                n_objects.append(obj)
+        ##########################################################################################
+
+        return n_objects
         
     def get_cells(self, outputs, img_size):
         cells =self.outputs_to_objects(outputs=outputs, img_size=img_size)
