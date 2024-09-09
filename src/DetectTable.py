@@ -184,6 +184,7 @@ if __name__=="__main__":
     visualized_image = table_detection.fig2img(fig=fig)
 
     tokens = []
+    
     detection_class_thresholds = {
         "table": 0.5,
         "table rotated" : 0.5,
