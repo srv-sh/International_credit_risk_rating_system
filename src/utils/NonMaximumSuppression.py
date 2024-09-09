@@ -24,7 +24,7 @@ def iou(box1, box2):
     iou = inter_area / union_area
     return iou
 
-def non_max_suppression(boxes, scores, iou_threshold=0.5):
+def non_max_suppression(boxes, scores, iou_threshold=1):
     indices = np.argsort(scores)[::-1]
     keep = []
 
