@@ -4,8 +4,6 @@ from typing import List, Dict
 from PIL import Image
 import json
 import io
-
-# Import your existing modules and classes
 from src.DetectTable import TableDetection
 from src.utils.NonMaximumSuppression import non_max_suppression
 from src.RecogniseStucture import TableStuctureRecognisation
