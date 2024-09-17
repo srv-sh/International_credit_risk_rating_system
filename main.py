@@ -120,6 +120,7 @@ class main():
         # store in  the dataframe
         data = pd.DataFrame(rows)
         shape =data.shape
+        # print("-------", shape , "--------")
         if shape[1] == 3 :
             column_header.insert(0,"Particulars")
             print(column_header)
