@@ -66,7 +66,7 @@ class TableStuctureRecognisation():
             if not class_label == 'no object':
                 objects.append({'label': class_label, 'score': float(score),
                                 'bbox': [float(elem) for elem in bbox]})
-        # return objects
+        return objects
 
                 
         boxes = [obj['bbox'] for obj in objects if obj['label'] == "table row"]

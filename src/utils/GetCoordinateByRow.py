@@ -9,7 +9,9 @@ class GetCoordinateByRow():
     def get_cordinate(self, table_data):
             # Extract rows and columns
         rows = [entry for entry in table_data if entry['label'] == 'table row']
+        # rows = [entry for entry in table_data if entry['label'] == 'row']
         columns = [entry for entry in table_data if entry['label'] == 'table column']
+        # columns = [entry for entry in table_data if entry['label'] == 'column']
 
         # Sort rows and columns by their Y and X coordinates, respectively
         rows.sort(key=lambda x: x['bbox'][1])
