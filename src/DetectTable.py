@@ -142,7 +142,8 @@ class TableDetection():
 
             cropped_img = img.crop(bbox)
 
-            table_tokens = [token for token in tokens if iob(token['bbox'], bbox) >= 0.5]
+            # table_tokens = [token for token in tokens if iob(token['bbox'], bbox) >= 0.5]
+            table_tokens = [token for token in tokens if (token['bbox'], bbox) >= 0.5]
             for token in table_tokens:
                 token['bbox'] = [token['bbox'][0]-bbox[0],
                                 token['bbox'][1]-bbox[1],

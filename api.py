@@ -12,6 +12,8 @@ from src.utils.OcrFromImage import OcrFromTableImage
 from src.utils.GetCoordinateByRow import GetCoordinateByRow
 import pandas as pd
 import re 
+from collections import defaultdict
+
 
 # Instantiate FastAPI
 app = FastAPI()
@@ -70,29 +72,41 @@ class Main:
         cells = self.stucture_recognisation.outputs_to_objects(outputs=outputs, img_size=cropped_table.size)
         return cells
 
-    def merge_dicts(self,dict_list):
-        # Initialize final dictionary
-        final_dict = {
-            "particulars": [],
-            "2023": [],
-            "2022": []
-        }
 
-        # Iterate over each dictionary in the list
-        for d in dict_list:
-            # Merge "particulars" list
-            if "particulars" in d:
-                final_dict["particulars"].extend(d["particulars"])  # Flatten and merge
 
-            # Merge "2023" list
-            if "2023" in d:
-                final_dict["2023"].extend(d["2023"])  # Flatten and merge
+    def merge_dicts(self,data):
+        merged_dict = defaultdict(list)
 
-            # Merge "2022" list
-            if "2022" in d:
-                final_dict["2022"].extend(d["2022"])  # Flatten and merge
+        for entry in data:
+            for key, value in entry.items():
+                merged_dict[key].extend(value)  # Append values without removing duplicates
+        
+        return [dict(merged_dict)]  # Convert defaultdict to a list containing one dictionary
 
-        return final_dict
+
+    # def merge_dicts(self,dict_list):
+    #     # Initialize final dictionary
+    #     final_dict = {
+    #         "particulars": [],
+    #         "2023": [],
+    #         "2022": []
+    #     }
+
+    #     # Iterate over each dictionary in the list
+    #     for d in dict_list:
+    #         # Merge "particulars" list
+    #         if "particulars" in d:
+    #             final_dict["particulars"].extend(d["particulars"])  # Flatten and merge
+
+    #         # Merge "2023" list
+    #         if "2023" in d:
+    #             final_dict["2023"].extend(d["2023"])  # Flatten and merge
+
+    #         # Merge "2022" list
+    #         if "2022" in d:
+    #             final_dict["2022"].extend(d["2022"])  # Flatten and merge
+
+    #     return final_dict
 
     def get_json(self, image_content):
         # Read image content from bytes and convert to PIL Image
@@ -126,11 +140,15 @@ class Main:
         shape =data.shape
         if shape[1] == 3 :
             column_header.insert(0,"Particulars")
-            print(column_header)
+            print("------",column_header,"------")
+
+
         elif shape[1] == 4:
             column_header.insert(0,"Particulars")
             column_header.insert(1,"Notes")
-            print(column_header)
+            print("------",column_header,"------")
+
+
         data.columns = column_header
         data =data.dropna(how="all")
         
@@ -139,6 +157,7 @@ class Main:
         particular = data[col[0]].tolist()
         year1 =  data[col[-2]].tolist()
         year2 =  data[col[-1]].tolist()
+        print(year1)
 
         return {"particulars" : particular,
                 column_header[-2]: year1,
