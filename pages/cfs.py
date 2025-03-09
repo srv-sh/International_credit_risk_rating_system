@@ -37,7 +37,9 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.write("### Cashflow Sheet")
-    st.image(files[2], caption="Cashflow Sheet", use_container_width=True)
+    image = files[2]
+    # image = image.resize((image.width, 800))  # Resize to desired height
+    st.image(image, caption="Cashflow Sheet", use_container_width=True)
 
 with col2:
     df = display_editable_dataframe(input_data)
@@ -45,7 +47,7 @@ with col2:
     st.write("### Edit Financial Data")
 
     # Display the DataFrame and allow editing
-    edited_df = st.data_editor(df, use_container_width=True)
+    edited_df = st.data_editor(df, use_container_width=True,  height=1000)
 
     if st.button("Save Changes"):
         # Convert the edited DataFrame back to JSON

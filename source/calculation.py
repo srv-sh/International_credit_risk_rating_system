@@ -23,6 +23,11 @@ class FinancialCalculator:
     def __init__(self, data):
         self.data = data
 
+        print("Debugging Calculation: --------------------------------")
+        print("-------------------------------------------------")
+
+        print(self.data)
+
         # Initialize all attributes with default values of 0
         # Initialize all attributes with default values of 0 or use values from JSON
         self.total_assets = data.get("total assets", 0)

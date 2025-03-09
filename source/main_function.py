@@ -144,9 +144,13 @@ class Main:
                 if term in particulars:
                     index = particulars.index(term)
                     value = input_data[year_key][index]
-                    if isinstance(value, (int, float)) or str(value).isdigit():
+                    if isinstance(value, (int, float)) or str(value).replace("-", "").isdigit():
                         matched_values.append(float(value))
+
             values_2023[key] = sum(matched_values) if matched_values else 0
+
+        print("values_2023 -------------------------------------")
+        print(values_2023)
 
         return values_2023
 
