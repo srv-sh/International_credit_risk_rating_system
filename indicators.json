@@ -1,0 +1,172 @@
+{
+    "Quantitative Indicators (60)": {
+        "A. Leverage": {
+            "Indicators": {
+                "Financial Debt to Tangible Net Worth (DTN)": {
+                    "Scale": 7,
+                    "Scoring": {
+                        "Excellent": "7",
+                        "Good": "6",
+                        "Marginal": "4",
+                        "Unacceptable": "0"
+                    }
+                },
+                "Financial Debt to Total Assets (DTA)": {
+                    "Scale": 3,
+                    "Scoring": {
+                        "Excellent": "3",
+                        "Good": "2.5",
+                        "Marginal": "2",
+                        "Unacceptable": "0"
+                    }
+                }
+            }
+        },
+        "B. Liquidity": {
+            "Indicators": {
+                "Current Ratio (CR)": {
+                    "Scale": 7,
+                    "Scoring": {
+                        "Excellent": "7",
+                        "Good": "6",
+                        "Marginal": "4",
+                        "Unacceptable": "0"
+                    }
+                },
+                "Cash Ratio (Cash)": {
+                    "Scale": 3,
+                    "Scoring": {
+                        "Excellent": "3",
+                        "Good": "2.5",
+                        "Marginal": "2",
+                        "Unacceptable": "0"
+                    }
+                }
+            }
+        },
+        "C. Profitability": {
+            "Indicators": {
+                "Net Profit Margin (NPM)": {
+                    "Scale": 5,
+                    "Scoring": {
+                        "Excellent": "5",
+                        "Good": "4",
+                        "Marginal": "3",
+                        "Unacceptable": "0"
+                    }
+                },
+                "Return on Assets (ROA)": {
+                    "Scale": 3,
+                    "Scoring": {
+                        "Excellent": "3",
+                        "Good": "2.5",
+                        "Marginal": "1.5",
+                        "Unacceptable": "0"
+                    }
+                },
+                "Operating Profit to Operating Assets (OPOA)": {
+                    "Scale": 2,
+                    "Scoring": {
+                        "Excellent": "2",
+                        "Good": "1.5",
+                        "Marginal": "1",
+                        "Unacceptable": "0"
+                    }
+                }
+            }
+        },
+        "D. Coverage": {
+            "Indicators": {
+                "Interest Coverage (IC)": {
+                    "Scale": 3,
+                    "Scoring": {
+                        "Excellent": "3",
+                        "Good": "2.5",
+                        "Marginal": "1",
+                        "Unacceptable": "0"
+                    }
+                },
+                "Debt Service Coverage Ratio (DSCR)": {
+                    "Scale": 5,
+                    "Scoring": {
+                        "Excellent": "5",
+                        "Good": "4",
+                        "Marginal": "3",
+                        "Unacceptable": "0"
+                    }
+                },
+                "Operating Cashflow to Debt Ratio (CDR)": {
+                    "Scale": 4,
+                    "Scoring": {
+                        "Excellent": "4",
+                        "Good": "3",
+                        "Marginal": "2",
+                        "Unacceptable": "0"
+                    }
+                },
+                "Cashflow Coverage Ratio (CCR)": {
+                    "Scale": 3,
+                    "Scoring": {
+                        "Excellent": "3",
+                        "Good": "2.5",
+                        "Marginal": "2",
+                        "Unacceptable": "0"
+                    }
+                }
+            }
+        },
+        "E. Operational Efficiency": {
+            "Indicators": {
+                "Stock Turnover Days (STD)": {
+                    "Scale": 4,
+                    "Scoring": {
+                        "Excellent": "4",
+                        "Good": "3",
+                        "Marginal": "2",
+                        "Unacceptable": "0"
+                    }
+                },
+                "Trade Debtor Collection Days (TDCD)": {
+                    "Scale": 3,
+                    "Scoring": {
+                        "Excellent": "3",
+                        "Good": "2.5",
+                        "Marginal": "2",
+                        "Unacceptable": "0"
+                    }
+                },
+                "Asset Turnover (AT)": {
+                    "Scale": 3,
+                    "Scoring": {
+                        "Excellent": "3",
+                        "Good": "2.5",
+                        "Marginal": "2",
+                        "Unacceptable": "0"
+                    }
+                }
+            }
+        },
+        "F. Earning Quality": {
+            "Indicators": {
+                "Operating Cash Flow to Sales (CFS)": {
+                    "Scale": 3,
+                    "Scoring": {
+                        "Excellent": "3",
+                        "Good": "2.5",
+                        "Marginal": "2",
+                        "Unacceptable": "0"
+                    }
+                },
+                "Cashflow Based Accrual Ratio (CAR)": {
+                    "Scale": 2,
+                    "Scoring": {
+                        "Excellent": "2",
+                        "Good": "1.5",
+                        "Marginal": "1",
+                        "Unacceptable": "0"
+                    }
+                }
+            }
+        }
+    }
+}
