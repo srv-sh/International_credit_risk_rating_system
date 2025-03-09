@@ -137,3 +137,7 @@ list_of_particulars = bs = [
     "foreign currency (loss)/gain", 
     "exchange rate (loss)/gain"
 ]
+
+model_path = "/workspace/hugging_face_model/olmOCR-7B-0225-preview"
+processor_path = "/workspace/hugging_face_model/Qwen2-VL-7B-Instruct"
+pdf_path = "/workspace/CreditScoring-refined-/pdf"
