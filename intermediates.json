@@ -1,0 +1,53 @@
+{
+    "total assets": [
+        "total assets"
+    ],
+    "total liabilities": [
+        "total liabilities"
+    ],
+    "current assets": [
+        "current assets"
+    ],
+    "current liabilities": [
+        "current liabilities"
+    ],
+    "intangible assets": [
+        "intangible assets"
+    ],
+    "long term loan-current portion": null,
+    "inventories": [
+        "inventories"
+    ],
+    "accounts receivables": null,
+    "capital work in progress": null,
+    "non-current assets": [
+        "total non current assets"
+    ],
+    "revenue": [
+        "revenue"
+    ],
+    "net profit after tax": [
+        "profit for the year"
+    ],
+    "operating profit": [
+        "operating profit"
+    ],
+    "earnings before tax": [
+        "profit before tax"
+    ],
+    "finance cost": [
+        "finance costs"
+    ],
+    "cost of sales": [
+        "cost of sales"
+    ],
+    "cash and cash equivalents at end of year": [
+        "closing cash and cash equivalents"
+    ],
+    "cash flows from operating activities": [
+        "cash flows from operating activities"
+    ],
+    "cash flows from financing activities": [
+        "cash flows from financing activities"
+    ]
+}
