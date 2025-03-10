@@ -24,37 +24,117 @@ class AgentCall:
 
         self.markdown_output = markdown_output
 
+        # # Adjust the prompt template to match the expected output format
+        # self.prompt_template = """
+        #     Given this markdown table of financial particulars:
+
+        #     {markdown_output},
+
+        #     For each of the following items, try to match the terms exactly or with clear synonyms.
+        #     If found or synonymous, return the result in JSON format as a dictionary like:
+
+        #     {{
+        #         "total assets": ["total assets"],
+        #         "total liabilities": ["total liabilities"],
+        #         ...
+        #     }}
+
+        #     If the items can be calculated with more than one terms in the table, give a list of those terms. 
+        #     If the item could not be matched, return the value as null.
+
+        #     Here's an example:
+        #     {{
+        #         "total assets": ["total assets"],
+        #         "net profit after tax": ["profit/(loss) after tax"],
+        #         "capital work in progress": [],
+        #         ...
+        #     }}
+
+        #     If a term does not have a numeric value in the markdown table, try not to include that term in the output even if it matches.
+
+        #     Here's an example:
+        #     {{
+        #         "total liabilities": ["total current liabilities", "total non-current liabilities"],
+        #     }}
+
+        #     NOTE: No numeric values are needed in the output.
+        #     NOTE: The output should be a single JSON object.
+        #     NOTE: output json key would be {item}
+        #     NOTE: Do not hallucinate and come up with json key excludeing in item 
+        #     NOTE: Just give the json, no extra sentences or anything else should be there. 
+        # """
+
         # Adjust the prompt template to match the expected output format
         self.prompt_template = """
-            Given this markdown table of financial particulars:
+            You are provided with a markdown table of financial particulars:
 
-            {markdown_output},
+            {markdown_output}
 
-            For each of the following items, try to match the terms exactly or with clear synonyms.
-            If found or synonymous, return the result in JSON format as a dictionary like:
+            Instructions:
+            - For each item listed below, find exact matches or clear synonyms in the table. 
+            - Return the results as a JSON object where each key is the item and the value is:
+            - A list of matching terms if found. 
+            - Null if no matching term or its synonyms are found with a value.
+            - A list of terms if the item requires multiple terms for calculation.
+            - If an exact match is found but has no value, and a synonym with a value exists, prioritize the synonym instead.
+            - Exclude items without numeric values even if they match.
+            - If a term partially matches another term (e.g., "equity and liabilities" for "liabilities"), do not consider it a valid match unless it is a direct synonym.
+            - Terms should only be matched if they clearly represent the item. Avoid partial matches where the meaning is altered.
 
-            {{
-                "total assets": ["total assets"],
-                "total liabilities": ["total liabilities"],
-                ...
-            }}
+            Example Scenario:
+            Suppose the markdown table is:
 
-            If the item could not be matched, return the value as null.
+            | Term                                  | Value       |
+            |------------------------------------- |-------------|
+            | total assets                         | 5000000      |
+            | cash flows from operating activities|              |
+            | cash generated from operating activities | 100000     |
+            | total current liabilities            | 3000000      |
+            | total non-current liabilities        | 2000000      |
+            | profit/(loss) after tax              | 150000       |
+            | capital work in progress             |              |
+            | total equity and liabilities         | 8000000      |
 
-            Here's an example:
+            And the items to match are:
+            - total assets  
+            - net profit after tax  
+            - capital work in progress  
+            - cash flows from operating activities  
+            - total liabilities  
+
+            The expected output should be:
+
             {{
                 "total assets": ["total assets"],
                 "net profit after tax": ["profit/(loss) after tax"],
-                "capital work in progress": []
+                "capital work in progress": null,
+                "cash flows from operating activities": ["cash generated from operating activities"],
+                "total liabilities": ["total current liabilities", "total non-current liabilities"],
             }}
 
-            NOTE: No numeric values are needed in the output.
-            NOTE: The output should be a single JSON object.
-            NOTE: output json key would be {item}
-            NOTE: Do not hallucinate and come up with json key excludeing in item 
-            NOTE: Just give the json, no extra sentences or anything else should be there. 
-            NOTE: If any value is not found, send empty list like: "capital work in progress": []. Do not send null. 
+            The bad output would be:
+            {{
+                ...
+                "cash flows from operating activities": ["cash flows from operating activities"],
+                ...
+            }}
+
+
+            Rules:
+            - The output must be a single JSON object.
+            - The JSON keys must match the provided items exactly. 
+            - Apply the prioritization rule consistently for all items.
+            - If a synonym with a value is found while the original term is empty, include the synonym in the output.
+            - Do not hallucinate or include irrelevant keys.
+            - Provide only the JSON output, no additional text.
+
+            Items to match: {item}
         """
+
+
+
+
+
 
         # Create the prompt template with proper input variables
         self.prompt = PromptTemplate(

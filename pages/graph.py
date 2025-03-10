@@ -160,6 +160,16 @@ class QuantitativeFigure:
             self.total_score, f"{percentage:.1f}"
         ]
 
+        if percentage >= 80:
+            label.append("Excellent")
+        elif 70 <= percentage < 80:
+            label.append("Good")
+        elif 60 <= percentage < 70:
+            label.append("Marginal")
+        else:
+            label.append("Unacceptable")
+
+
         param_percent = []
 
         for i in range(len(scales)):
