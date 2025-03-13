@@ -1,5 +1,6 @@
 import os
 import re
+import requests
 import json
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
@@ -132,9 +133,23 @@ class AgentCall:
             Items to match: {item}
         """
 
+        # Open the JSON file for reading
+        with open('json/variables.json', 'r') as json_file:
+            data = json.load(json_file)
 
+        # Clean the system_prompt by removing extra spaces, newlines, and escaping quotes
+        cleaned_prompt = ' '.join(data.get("system_prompt", "").split())  # Removes extra spaces and newlines
+        cleaned_prompt = cleaned_prompt.replace('"', '\\"')  # Escape double quotes
 
+        # Remove any unwanted brackets (both first and second sets)
+        cleaned_prompt = cleaned_prompt.replace("{", "").replace("}", "")  # Remove curly braces
 
+        # Update the system_prompt in the loaded data with the cleaned prompt
+        data["system_prompt"] = cleaned_prompt
+
+        # Save the updated JSON back to the file
+        with open('json/variables.json', 'w') as json_file:
+            json.dump(data, json_file, indent=4)
 
 
         # Create the prompt template with proper input variables
@@ -207,3 +222,4 @@ class InputList:
         
     def return_input(self):
         return self.item
+    
