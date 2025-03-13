@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import requests
+import json
 
 st.set_page_config(layout="wide")
 
@@ -171,6 +173,46 @@ with col2:
             st.session_state.bs_df = edited_df
             st.session_state.bs = edited_json
             st.success("Changes saved successfully as JSON!")
+
+            def transform_and_send(data: dict, database_url: str):
+                # Transforming data
+                transformed_data = {
+                    "url": data['bs']['pdf_url'],       
+                    "prompt": data['bs']['prompt'],     
+                    "page_number": 1,                   
+                    "response": json.dumps(data['bs']['raw_response'])  # Serialize the raw response as a JSON string
+                }
+
+                # Log the transformed data to verify it's correct
+                print(f"Sending transformed data: {json.dumps(transformed_data, indent=2)}")
+
+                # Sending transformed data to the database URL
+                try:
+                    response = requests.post(database_url, json=transformed_data)
+                    response.raise_for_status()
+                    return {'status': 'success', 'response': response.json()}
+                except requests.exceptions.RequestException as e:
+                    return {'status': 'error', 'error': str(e)}
+
+            # Example URL
+            url = "http://192.168.10.50:8000/store_ocr_data"
+
+            storedb = transform_and_send(input_data, url)
+            print(f"THE DATABASE RESPONSE IS: {storedb}")
+
+            # Step 1: Load the JSON file
+            with open('json/variables.json', 'r') as file:
+                data = json.load(file)
+
+            # Step 2: Modify the value of a specific key
+            data['balance_id'] = storedb['response']['id']
+
+            # Step 3: Save the modified data back to the JSON file
+            with open('json/variables.json', 'w') as file:
+                json.dump(data, file, indent=4)
+
+            print("Key value updated successfully!")
+
 
         if st.button("Next"):
             st.switch_page("pages/is.py")

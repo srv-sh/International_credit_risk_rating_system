@@ -42,6 +42,41 @@ class Main:
         else:
             st.error("No files to upload.")
             return None
+        
+
+    def store_llm_data(self, database_url, markdown, results):
+    
+        sheet = InputList()
+
+
+        with open('json/variables.json', 'r') as file:
+            data = json.load(file)
+        
+
+        # Assuming data is loaded properly and markdown/output is prepared
+        transformed_data = {
+            "system_prompt": data['system_prompt'],  # Ensure this is a plain string
+            "required_params": sheet.item,           # List of required parameters
+            "list_of_params": markdown,              # Ensure this is a properly formatted string
+            "response": json.loads(results),         # Ensure this is a valid JSON object if required by the API
+            "bs_id": data['balance_id'],             # Ensure this is an integer
+            "is_id": data['income_id'],              # Ensure this is an integer
+            "cfs_id": data['cash_id']                # Ensure this is an integer
+        }
+
+        # Log the transformed data to verify it's correct
+        print(f"Sending transformed data: {transformed_data}")
+
+        # Sending transformed data to the database URL
+        try:
+            response = requests.post(database_url, json=transformed_data)
+            response.raise_for_status()
+            return {'status': 'success', 'response': response.json()}
+        except requests.exceptions.RequestException as e:
+            return {'status': 'error', 'error': str(e)}
+
+        
+
 
 
     def intermediate_values(self, input_data):
@@ -60,9 +95,11 @@ class Main:
 
         if json_data:  # Check if json_data was found
             # Generate markdown from JSON data
-            markdown_output = md.generate_markdown(json_data)
+            self.markdown_output = md.generate_markdown(json_data)
+            # if "markdown" not in st.session_state:
+            #     st.session_state.markdown = markdown_output
 
-            print(markdown_output)
+            print(self.markdown_output)
 
             # Create an instance of AgentCall with the markdown output
             # agent_prompt = AgentCall(markdown_output)
@@ -75,7 +112,7 @@ class Main:
             # Initialize GetOutput with the agent and markdown table
             # get_output = GetOutput(markdown_output)
 
-            agent = AgentCall(markdown_output)
+            agent = AgentCall(self.markdown_output)
 
             # Get and print results
             results = agent.generate_response(sheet.item)
@@ -83,6 +120,12 @@ class Main:
 
         else:
             print("JSON data not found.")
+
+        url = "http://192.168.10.50:8000/store_llm_data"
+        a = self.store_llm_data(url, self.markdown_output, results)
+
+        print(f"LLM DATABASE MESSAGE: {a}")
+
 
         return results
 
@@ -252,11 +295,6 @@ class Main:
     
 
 
-# if __name__ == "__main__":
-#     main_program = Main()
 
-#     input_data = main_program.hit_fastapi()
 
-#     if input_data:
-#         main_program.intermediate_values(input_data)
-#         main_program.final_output("intermediates.json")
+
