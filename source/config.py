@@ -126,7 +126,8 @@ class AgentCall:
             - Apply the prioritization rule consistently for all items.
             - If a synonym with a value is found while the original term is empty, include the synonym in the output.
             - Do not hallucinate or include irrelevant keys.
-            - Provide only the JSON output, no additional text.
+            - Provide only the JSON output, NO ADDITIONAL TEXT
+            - There should not be anything in the output other than just the json.
 
             Items to match: {item}
         """

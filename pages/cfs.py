@@ -3,60 +3,174 @@ import json
 import pandas as pd
 from tabulate import tabulate  # Ensure tabulate is installed: pip install tabulate
 from io import StringIO
+from collections import defaultdict
 from source.main_function import Main
-
-# input_data = {'bs': {'particulars': ['Assets', 'Property, plant and equipment', 'Right-of-use assets', 'Equity-accounted investees', 'Other investments', 'Intangible assets', 'Biological assets', 'Deferred tax assets', 'Non-current assets', 'Inventories', 'Trade receivables', 'Other receivables', 'Receivable from joint-ventures and associates', 'Advances, deposits and prepayments', 'Current tax assets', 'Short term investments', 'Cash and cash equivalents', 'Current assets', 'Total assets', 'Equity', 'Share capital', 'Share premium', 'Reserves', 'Retained earnings', 'Equity attributable to the owners of the Company', 'Non-controlling interests', 'Total equity', 'Liabilities', 'Employee benefits', 'Long term bank loans', 'Lease liabilities', 'Non-current liabilities', 'Bank overdraft', 'Loans and borrowings', 'Lease liabilities-current portion', 'Trade payables', 'Other payables', 'Unclaimed dividend account', 'Current liabilities', 'Total liabilities', 'Total equity and liabilities', 'Consolidated Net Asset Value (NAV) per share'], '2023': ['', '31715817451', '3082581839', '2058056899', '1027172247', '1409150269', '36569791', '341108740', '39670457236', '21791856287', '16648869492', '1103490611', '965101', '3291523760', '343735757', '2784452098', '5272771904', '51237665010', '90908122246', '', '762056260', '1254115881', '6130774222', '515470230', '8662416593', '1884856391', '10547272984', '', '1720980000', '6047143695', '2392020059', '10160143754', '8427735948', '44885489976', '484099575', '7035969221', '9281693343', '85717445', '70200705508', '80360849262', '90908122246', '113.67'], '2022': ['', '29154498292', '1720125531', '2157943932', '822290382', '1367550235', '31303261', '709841617', '35963553250', '20323249620', '12772253271', '832500769', '5612894', '2512497990', '103391819', '-', '3208757234', '39758263596', '75721816847', '', '725767870', '1231094113', '6950487337', '1397376137', '10304725457', '1899966715', '12204692172', '', '1583157153', '6408915381', '1384717849', '9376790384', '5177125582', '35271595114', '382470526', '5518327175', '7702734053', '88081841', '54140334291', '63517124675', '75721816847', '135.22']}, 'is': {'particulars': ['Revenue', 'Cost of sales', 'Gross profit', 'Administrative, selling and distribution expenses', 'Other income', 'Operating profit', 'Gain on disposal of investment in equity accounted investees', 'Share of profit of equity accounted investees', 'Net finance costs', 'Profit before contribution to WPPF', 'Contribution to WPPF', 'Profit before tax', 'Income tax expense', 'Current tax expense', 'Deferred tax income/(expense)', 'Profit/(loss) after tax', 'Profit/(loss) attributable to', 'Owners of the Company', 'Non-controlling interests', 'Profit/(loss) attributable to', 'Basic and diluted earnings per share'], '2023': ['115355397105', '-89483069654', '', '-20222196292', '488722566', '6138853725', '416029319', '450867732', '-5053581867', '1952168909', '-299481648', '1652687261', '', '-2139744182', '412171228', '-1727572954', '', '-493958862', '419073169', '-74885693', '37.1(a)'], '2022': ['96571641497', '-72717772659', '', '-17767565065', '347744046', '6434047819', '-', '444850102', '-3913281118', '2965616803', '-337886688', '2627730115', '', '-1942502635', '207775600', '-1734727035', '', '379644188', '513358892', '893003080', '4.98']}, 'cfs': {'particulars': ['Cash flows from operating activities', 'Cash receipts from customers and others', 'Cash paid to suppliers and employees', 'Cash generated from operating activities', 'Paid to WPPF', 'Interest paid', 'Income tax paid', '', 'Net cash from/(used in) operating activities', 'Cash flows from investing activities', 'Acquisition of property, plant and equipment', 'Payments for capital work-in-progress', 'Proceeds from sale of property, plant and equipment', 'Proceeds from disposal of investment in joint ventures and associates', 'Purchase of biological assets', 'Dividend received', 'Short term investments', 'Long term investments', 'Net cash from/(used in) investing activities', 'Cash flows from financing activities', 'Dividend paid to non-controlling interests', 'Inter-company debts received/(paid)', 'Dividend paid', 'Capital contribution by non-controlling interests in ACI AgroChem', 'Payment for lease liabilities', 'Equity investment received by ACI Motors Limited', 'Short-term bank loan received/(paid)', 'Long-term bank loan received/(paid)', 'Net cash from/(used in) financing activities', 'Net increase/(decrease) in cash and cash equivalents', 'Opening cash and cash equivalents', 'Effect of movements in exchange rate on cash held', 'Cash and cash equivalents at reporting date', '', '---', 'Cash and cash equivalents', 'Bank overdraft', 'Consolidated Net Operating Cash Flows Per Share (NOCFPS)'], '2023': ['', '111898296077', '-107404701258', '4493594819', '-250596660', '-3729917736', '-2380088122', '-6360602518', '-1867007699', '', '-800698103', '-3427460707', '13767961', '689284085', '-5573486', '280355906', '-2784452098', '-207381034', '-6242157477', '', '-202292723', '4647793', '-365684867', '1000000', '-472933351', '-', '8833028441', '-885621270', '6912144024', '-1197021152', '-1968368348', '10425456', '-3154964044', 'For the year ended 30 June 2023', '---', '5272771904', '-8427735948', '37.3(a)'], '2022': ['', '96351082929', '-90389500238', '5961582691', '-256873602', '-3256372716', '-2140637665', '-5653883983', '307698708', '', '-512334099', '-1668657993', '6158696', '-', '-14527787', '352839090', '1157334040', '-198355507', '-877543559', '', '-70504383', '157199', '-445609225', '-', '-417689912', '824728692', '-342181408', '-1262588190', '-1713687227', '-2283532078', '287985204', '27178526', '-1968368348', 'For the year ended 30 June 2022', '---', '3208757234', '-5177125582', '4.04']}}
-
-# Check if input data and files exist in session state
-if 'input' in st.session_state:
-    input_data = st.session_state.input
-else:
-    st.error("Input data not found")
-
-if 'files' in st.session_state:
-    files = st.session_state.files
-else:
-    st.error("Files not found")
 
 
 st.set_page_config(layout="wide")  # Ensures the app uses the full width of the page
 
 # files = ["aci1.png", "aci2.png", "aci3.png"]
 
+# Function to display the DataFrame and allow editing
 def display_editable_dataframe(data):
     if data:
-        df = pd.DataFrame(data['cfs'])  # Assuming 'bs' is the data of interest
-        return df
+        cfs_df = pd.DataFrame(data['cfs']['processed_response'])  # Assuming 'is' is the data of interest
+        return cfs_df
     else:
         return None
+    
+
+def json_to_markdown_table(json_data):
+    """
+    Converts a JSON object with column names as keys to a Markdown table.
+    
+    Args:
+        json_data (dict): A dictionary where keys are column names and values are lists of row values.
+
+    Returns:
+        str: A Markdown formatted table as a string.
+    """
+    # Extract column names and rows
+    columns = list(json_data.keys())
+    rows = zip(*[json_data[col] for col in columns])
+
+    # Prepare the header row
+    markdown = "| " + " | ".join(columns) + " |\n"
+    markdown += "| " + " | ".join(["---"] * len(columns)) + " |\n"
+    
+    # Prepare data rows
+    for row in rows:
+        row_values = [str(cell) if cell != '' else ' ' for cell in row]
+        markdown += "| " + " | ".join(row_values) + " |\n"
+    
+    return markdown
+
 
 st.title("Financial Data Table")
 
-# Create two equally sized columns
+# Load session state data
+if 'input' not in st.session_state:
+    st.error("Input data not found")
+else:
+    input_data = st.session_state.input
+
+if 'files' not in st.session_state:
+    st.error("Files not found")
+else:
+    files = st.session_state.files
+
+# Display image and DataFrame
 col1, col2 = st.columns(2)
 
 with col1:
     st.write("### Cashflow Sheet")
     image = files[2]
-    # image = image.resize((image.width, 800))  # Resize to desired height
     st.image(image, caption="Cashflow Sheet", use_container_width=True)
 
 with col2:
-    df = display_editable_dataframe(input_data)
+    cfs_df = display_editable_dataframe(input_data)
 
-    st.write("### Edit Financial Data")
+    if cfs_df is not None:
+        st.write("### Edit Financial Data")
 
-    # Display the DataFrame and allow editing
-    edited_df = st.data_editor(df, use_container_width=True,  height=1000)
+        # Check if the dataframe is already stored in session state
+        if 'cfs_df' not in st.session_state:
+            st.session_state.cfs_df = cfs_df
+        else:
+            cfs_df = st.session_state.cfs_df
 
-    if st.button("Save Changes"):
-        # Convert the edited DataFrame back to JSON
-        edited_json = edited_df.to_dict(orient='list')  
-        st.session_state.cfs = edited_json
+        # Adding row position bar and "Add Row" button above the table
+        row_col1, row_col2 = st.columns([1, 1])
 
-        print(edited_json)
+        # Option to add a row
+        with row_col1:
+            if 'selected_index' not in st.session_state:
+                st.session_state.selected_index = len(cfs_df)
 
-        st.success("Changes saved successfully as JSON!")
+            # Input box for index display (editable)
+            selected_index = st.text_input(
+                "Index to add row:", 
+                value=str(st.session_state.selected_index)
+            )
+
+            # Update session state when the index is edited manually
+            if selected_index.isdigit():
+                st.session_state.selected_index = int(selected_index)
+
+            # Add the row at the selected index when button is clicked
+            if st.button("Add Row"):
+                # Create an empty row with the same columns as the DataFrame
+                empty_row = {col: '' for col in cfs_df.columns}
+                new_row_df = pd.DataFrame([empty_row])
+
+                # Split the DataFrame and insert the new row at the specified index
+                top_part = cfs_df.iloc[:st.session_state.selected_index]
+                bottom_part = cfs_df.iloc[st.session_state.selected_index:]
+
+                edited_df = pd.concat([top_part, new_row_df, bottom_part], ignore_index=True)
+
+                # Save changes to session state
+                st.session_state.cfs_df = edited_df
+                st.session_state.cfs = edited_df.to_dict(orient='list')
+
+                st.success(f"Empty row added successfully at index {st.session_state.selected_index}!")
+
+            
+        # Option to add a column
+        with row_col2:
+            column_name_input = st.text_input("Enter new column name:", "New Column")
+            if st.button("Add Column"):
+                # Use the input name for the new column
+                new_column_name = column_name_input.strip() or f"New Column {len(cfs_df.columns) + 1}"
+                
+                # Create a new column with empty values for all rows
+                cfs_df[new_column_name] = ''
+
+                # Save changes to session state
+                st.session_state.cfs_df = cfs_df
+                st.session_state.cfs = cfs_df.to_dict(orient='list')
+
+                st.success(f"New column '{new_column_name}' added successfully!")
+
+        
+
+        # Option to delete a column
+        column_to_delete = st.selectbox("Select a column to delete:", cfs_df.columns)
+
+        if st.button("Delete Column"):
+            # Delete the selected column
+            if column_to_delete:
+                cfs_df.drop(columns=[column_to_delete], inplace=True)
+                st.session_state.cfs_df = cfs_df
+                st.session_state.cfs = cfs_df.to_dict(orient='list')
+
+                st.success(f"Column '{column_to_delete}' deleted successfully!")
+
+        # Reset index for display in the table
+        edited_df_with_index = cfs_df.reset_index()  # Reset index so it's included as a column
+
+        # Display editable DataFrame
+        edited_df = st.data_editor(edited_df_with_index, use_container_width=True, height=800, num_rows="dynamic")
+
+        # Track the clicked index and update selected_index in session state
+        if edited_df is not None and 'selected_index' in st.session_state:
+            # Capture index click event
+            row_click = st.session_state.selected_index
+            st.session_state.selected_index = row_click
+            selected_index = row_click
+
+        # Save changes
+        if st.button("Save Changes"):
+            edited_df_no_index = edited_df.drop(columns=['index'], errors='ignore')  # Drop 'index' column if present
+
+            # Convert to JSON without the index
+            edited_json = edited_df_no_index.to_dict(orient='list')
+            md = json_to_markdown_table(edited_json)
+
+            input_data['cfs']['raw_response']['natural_text'] = md
+            st.session_state.cfs_df = edited_df
+            st.session_state.cfs = edited_json
+            st.success("Changes saved successfully as JSON!")
 
 
 
@@ -70,7 +184,7 @@ with col2:
         if 'pls' in st.session_state:
             pls = st.session_state.pls
         else:
-            st.error("is not found")
+            st.error("cfs not found")
 
         if 'cfs' in st.session_state:
             cfs = st.session_state.cfs
@@ -92,10 +206,36 @@ with col2:
                     else:
                         merged_json[key].append(value)  # Convert single value to list
 
-        # Pretty-printing the merged JSON
-        # print(json.dumps(merged_json, indent=4))
 
-        # merged_json = json.dumps(merged_json)
+
+        def merge_keys(data):
+            # Create a dictionary to store merged keys
+            merged_data = defaultdict(list)
+
+            # Sort keys by length to ensure substrings come before full strings
+            keys = sorted(data.keys(), key=len)
+
+            visited = set()  # Track visited keys
+
+            for i, key1 in enumerate(keys):
+                if key1 in visited:
+                    continue
+                merged_data[key1] = data[key1]
+                for key2 in keys[i + 1:]:
+                    if key2 in visited:
+                        continue
+                    if key1 in key2:  # If key1 is a substring of key2
+                        # Merge data of key2 into key1
+                        if isinstance(data[key2], list):
+                            merged_data[key1].extend(data[key2])
+                        else:
+                            merged_data[key1].append(data[key2])
+                        visited.add(key2)  # Mark key2 as visited
+
+            # Return the merged data as a normal dictionary
+            return dict(merged_data)
+
+        merged_json = merge_keys(merged_json)
 
         print("THE MERGE JSON IS: ---------------------------------------")
         print("-------------------------------------------------------------------------")
