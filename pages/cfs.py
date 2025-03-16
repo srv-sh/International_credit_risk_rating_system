@@ -10,16 +10,13 @@ import requests
 
 st.set_page_config(layout="wide")  # Ensures the app uses the full width of the page
 
-# files = ["aci1.png", "aci2.png", "aci3.png"]
-
 # Function to display the DataFrame and allow editing
 def display_editable_dataframe(data):
     if data:
-        cfs_df = pd.DataFrame(data['cfs']['processed_response'])  # Assuming 'is' is the data of interest
+        cfs_df = pd.DataFrame(data['cfs']['processed_response'])  # Assuming 'cfs' is the data of interest
         return cfs_df
     else:
         return None
-    
 
 def json_to_markdown_table(json_data):
     """
@@ -45,7 +42,6 @@ def json_to_markdown_table(json_data):
         markdown += "| " + " | ".join(row_values) + " |\n"
     
     return markdown
-
 
 st.title("Financial Data Table")
 
@@ -116,7 +112,6 @@ with col2:
 
                 st.success(f"Empty row added successfully at index {st.session_state.selected_index}!")
 
-            
         # Option to add a column
         with row_col2:
             column_name_input = st.text_input("Enter new column name:", "New Column")
@@ -133,8 +128,6 @@ with col2:
 
                 st.success(f"New column '{new_column_name}' added successfully!")
 
-        
-
         # Option to delete a column
         column_to_delete = st.selectbox("Select a column to delete:", cfs_df.columns)
 
@@ -148,28 +141,34 @@ with col2:
                 st.success(f"Column '{column_to_delete}' deleted successfully!")
 
         # Reset index for display in the table
-        edited_df_with_index = cfs_df.reset_index()  # Reset index so it's included as a column
+        edited_df_with_index = cfs_df.reset_index(drop=False)  # Reset index and include it as a column
 
-        # Display editable DataFrame
-        edited_df = st.data_editor(edited_df_with_index, use_container_width=True, height=800, num_rows="dynamic")
-
-        # Track the clicked index and update selected_index in session state
-        if edited_df is not None and 'selected_index' in st.session_state:
-            # Capture index click event
-            row_click = st.session_state.selected_index
-            st.session_state.selected_index = row_click
-            selected_index = row_click
+        # Display editable DataFrame with index shown in the UI
+        edited_df = st.data_editor(
+            edited_df_with_index,
+            use_container_width=True,
+            height=800,
+            num_rows="dynamic",
+            column_config={
+                "index": st.column_config.NumberColumn(
+                    "Index",  # Display the index as a column
+                    help="Row index",
+                    width="small",
+                )
+            }
+        )
 
         # Save changes
-        if st.button("Save Changes"):
-            edited_df_no_index = edited_df.drop(columns=['index'], errors='ignore')  # Drop 'index' column if present
+        if st.button("Next"):
+            # Drop the index column before saving
+            edited_df_no_index = edited_df.drop(columns=["index"])
 
             # Convert to JSON without the index
             edited_json = edited_df_no_index.to_dict(orient='list')
             md = json_to_markdown_table(edited_json)
 
             input_data['cfs']['raw_response']['natural_text'] = md
-            st.session_state.cfs_df = edited_df
+            st.session_state.cfs_df = edited_df_no_index
             st.session_state.cfs = edited_json
             st.success("Changes saved successfully as JSON!")
 
@@ -212,84 +211,78 @@ with col2:
 
             print("Key value updated successfully!")
 
+            if 'bs' in st.session_state:
+                bs = st.session_state.bs
+            else:
+                st.error("bs not found")
 
+            if 'pls' in st.session_state:
+                pls = st.session_state.pls
+            else:
+                st.error("cfs not found")
 
-    if st.button("Next"):
+            if 'cfs' in st.session_state:
+                cfs = st.session_state.cfs
+            else:
+                st.error("cfs not found")
 
-        if 'bs' in st.session_state:
-            bs = st.session_state.bs
-        else:
-            st.error("bs not found")
+            json_list = [bs, pls, cfs]
 
-        if 'pls' in st.session_state:
-            pls = st.session_state.pls
-        else:
-            st.error("cfs not found")
-
-        if 'cfs' in st.session_state:
-            cfs = st.session_state.cfs
-        else:
-            st.error("cfs not found")
-
-        json_list = [bs, pls, cfs]
-
-        # Merge values into lists
-        # Merging logic
-        merged_json = {}
-        for json_obj in json_list:
-            for key, value in json_obj.items():
-                if key not in merged_json:
-                    merged_json[key] = value if isinstance(value, list) else [value]
-                else:
-                    if isinstance(value, list):
-                        merged_json[key].extend(value)  # Add elements if already a list
+            # Merge values into lists
+            # Merging logic
+            merged_json = {}
+            for json_obj in json_list:
+                for key, value in json_obj.items():
+                    if key not in merged_json:
+                        merged_json[key] = value if isinstance(value, list) else [value]
                     else:
-                        merged_json[key].append(value)  # Convert single value to list
-
-
-
-        def merge_keys(data):
-            # Create a dictionary to store merged keys
-            merged_data = defaultdict(list)
-
-            # Sort keys by length to ensure substrings come before full strings
-            keys = sorted(data.keys(), key=len)
-
-            visited = set()  # Track visited keys
-
-            for i, key1 in enumerate(keys):
-                if key1 in visited:
-                    continue
-                merged_data[key1] = data[key1]
-                for key2 in keys[i + 1:]:
-                    if key2 in visited:
-                        continue
-                    if key1 in key2:  # If key1 is a substring of key2
-                        # Merge data of key2 into key1
-                        if isinstance(data[key2], list):
-                            merged_data[key1].extend(data[key2])
+                        if isinstance(value, list):
+                            merged_json[key].extend(value)  # Add elements if already a list
                         else:
-                            merged_data[key1].append(data[key2])
-                        visited.add(key2)  # Mark key2 as visited
+                            merged_json[key].append(value)  # Convert single value to list
 
-            # Return the merged data as a normal dictionary
-            return dict(merged_data)
+            def merge_keys(data):
+                # Create a dictionary to store merged keys
+                merged_data = defaultdict(list)
 
-        merged_json = merge_keys(merged_json)
+                # Sort keys by length to ensure substrings come before full strings
+                keys = sorted(data.keys(), key=len)
 
-        print("THE MERGE JSON IS: ---------------------------------------")
-        print("-------------------------------------------------------------------------")
-        print(merged_json)
+                visited = set()  # Track visited keys
 
-        st.session_state.input = merged_json
+                for i, key1 in enumerate(keys):
+                    if key1 in visited:
+                        continue
+                    merged_data[key1] = data[key1]
+                    for key2 in keys[i + 1:]:
+                        if key2 in visited:
+                            continue
+                        if key1 in key2:  # If key1 is a substring of key2
+                            # Merge data of key2 into key1
+                            if isinstance(data[key2], list):
+                                merged_data[key1].extend(data[key2])
+                            else:
+                                merged_data[key1].append(data[key2])
+                            visited.add(key2)  # Mark key2 as visited
 
-        main_program = Main()
-        intermediate_values = main_program.intermediate_values(merged_json)
-        inter_result = main_program.intermediate_result(merged_json, intermediate_values)
-        output = main_program.final_output(inter_result)
+                # Return the merged data as a normal dictionary
+                return dict(merged_data)
 
-        st.session_state.output = output
-        st.write("### Processed Output:")
-        st.json(output)
+            merged_json = merge_keys(merged_json)
 
-        st.switch_page("pages/parameters.py")
+            print("THE MERGE JSON IS: ---------------------------------------")
+            print("-------------------------------------------------------------------------")
+            print(merged_json)
+
+            st.session_state.input = merged_json
+
+            main_program = Main()
+            intermediate_values = main_program.intermediate_values(merged_json)
+            inter_result = main_program.intermediate_result(merged_json, intermediate_values)
+            output = main_program.final_output(inter_result)
+
+            st.session_state.output = output
+            st.write("### Processed Output:")
+            st.json(output)
+
+            st.switch_page("pages/formula.py")

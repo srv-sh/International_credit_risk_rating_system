@@ -44,7 +44,7 @@ class MarkDown:
         markdown += "|-------------|------|\n"
         
         if data:
-            particulars = data.get(list(data.keys())[0], [])
+            particulars = data.get("particulars",0)
             values = []
             for key in data.keys():
                 if pattern.search(key):
