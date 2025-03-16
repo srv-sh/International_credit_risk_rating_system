@@ -62,6 +62,6 @@ if st.button("Save Changes"):
     # Switch to graph.py after saving
     st.switch_page("pages/graph.py")  # Navigate to the graph.py page
 
-# Button to Navigate Back to Home
-if st.button("Go to Home Page"):
-    st.switch_page("home.py")  # Ensure you have a `home.py` for navigation
+# # Button to Navigate Back to Home
+# if st.button("Go to Home Page"):
+#     st.switch_page("home.py")  # Ensure you have a `home.py` for navigation
