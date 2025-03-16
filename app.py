@@ -6,6 +6,7 @@ import io
 from src.GetDataFromTable import getTableFromImage
 import psycopg2
 from psycopg2 import sql
+from typing import Optional
 
 app = FastAPI(
     title="Credit Scoring System API",
@@ -56,29 +57,28 @@ class LLMData(BaseModel):
             }
         }
 
-class Scoring(BaseModel):
-    """Model for financial scoring data."""
-    dtn_score: float = 85.0
-    dta_score: float = 90.0
-    current_ratio_score: float = 70.0
-    cash_ratio_score: float = 50.0
-    npm_score: float = 60.0
-    roa_score: float = 65.0
-    opoa_score: float = 55.0
-    ic_score: float = 80.0
-    dscr_score: float = 75.0
-    cdr_score: float = 72.0
-    ccr_score: float = 78.0
-    std_score: float = 88.0
-    tdcd_score: float = 85.0
-    at_score: float = 90.0
-    cfs_score: float = 95.0
-    car_score: float = 92.0
-    total_score: float = 80.5
-    bs_id: int | None = None  # Foreign key (nullable)
-    is_id: int | None = None  # Foreign key (nullable)
-    cfs_id: int | None = None  # Foreign key (nullable)
-    llm_id: int | None = None  # Foreign key (nullable)
+class ScoringData(BaseModel):
+    dtn_score: float
+    dta_score: float
+    current_ratio_score: float
+    cash_ratio_score: float
+    npm_score: float
+    roa_score: float
+    opoa_score: float
+    ic_score: float
+    dscr_score: float
+    cdr_score: float
+    ccr_score: float
+    std_score: float
+    tdcd_score: float
+    at_score: float
+    cfs_score: float
+    car_score: float
+    total_score: float
+    bs_id: Optional[int] = None
+    is_id: Optional[int] = None
+    cfs_id: Optional[int] = None
+    llm_id: Optional[int] = None
 
     class Config:
         schema_extra = {
@@ -208,34 +208,40 @@ async def store_llm_data(data: LLMData):
         conn.close()
 
 
-@app.post("/store_scoring_data/", summary="Store Scoring Data", description="Store the scoring data based on financial metrics.")
-async def store_scoring_data(data: Scoring):
-    """
-    Stores scoring data into the database.
-    - **data**: The calculated financial scores based on various metrics.
-    """
+@app.post("/store_scoring_data/")
+async def store_scoring_data(data: ScoringData):
     conn = main_cls.get_db_connection()
     cur = conn.cursor()
+
     try:
         query = """
-        INSERT INTO Scoring (dtn_score, dta_score, current_ratio_score, cash_ratio_score, npm_score,
-                             roa_score, opoa_score, ic_score, dscr_score, cdr_score, ccr_score, std_score,
-                             tdcd_score, at_score, cfs_score, car_score, total_score, bs_id, is_id, cfs_id, llm_id)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO scoring (
+            dtn_score, dta_score, current_ratio_score, cash_ratio_score, npm_score, roa_score,
+            opoa_score, ic_score, dscr_score, cdr_score, ccr_score, std_score, tdcd_score, 
+            at_score, cfs_score, car_score, total_score, bs_id, is_id, cfs_id, llm_id
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """
+
         cur.execute(query, (
             data.dtn_score, data.dta_score, data.current_ratio_score, data.cash_ratio_score, data.npm_score,
             data.roa_score, data.opoa_score, data.ic_score, data.dscr_score, data.cdr_score, data.ccr_score,
             data.std_score, data.tdcd_score, data.at_score, data.cfs_score, data.car_score, data.total_score,
-            data.bs_id, data.is_id, data.cfs_id, data.llm_id
+            data.bs_id if data.bs_id != 0 else None,
+            data.is_id if data.is_id != 0 else None,
+            data.cfs_id if data.cfs_id != 0 else None,
+            data.llm_id if data.llm_id != 0 else None
         ))
-        inserted_id = cur.fetchone()[0]
+
+        inserted_id = cur.fetchone()[0]  # Get the inserted ID
         conn.commit()
-        return {"message": "Scoring data inserted successfully", "id": inserted_id}
+
+        return {"id": inserted_id, "message": "Data inserted successfully"}
+
     except Exception as e:
         conn.rollback()
         return {"error": str(e)}
+
     finally:
         cur.close()
         conn.close()
