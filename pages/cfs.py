@@ -279,10 +279,71 @@ with col2:
             main_program = Main()
             intermediate_values = main_program.intermediate_values(merged_json)
             inter_result = main_program.intermediate_result(merged_json, intermediate_values)
-            output = main_program.final_output(inter_result)
+            output_data, output = main_program.final_output(inter_result)
 
-            st.session_state.output = output
+            url = "http://192.168.10.50:8000/store_scoring_data"
+
+            print(output)
+
+            def store_scoring_data(scoring_data, url):
+                with open('json/variables.json', 'r') as file:
+                    data = json.load(file)
+
+                # Check if scoring_data is a dictionary
+                if isinstance(scoring_data, dict):
+                    total_score = sum([score for score in scoring_data.values() if isinstance(score, (int, float))])
+                    scoring_data_dict = scoring_data
+                # If it's a list, assume the values are in the same order as the dictionary keys
+                elif isinstance(scoring_data, list):
+                    scoring_data_dict = {
+                        "dtn_score": scoring_data[0] if len(scoring_data) > 0 else 0,
+                        "dta_score": scoring_data[1] if len(scoring_data) > 1 else 0,
+                        "current_ratio_score": scoring_data[2] if len(scoring_data) > 2 else 0,
+                        "cash_ratio_score": scoring_data[3] if len(scoring_data) > 3 else 0,
+                        "npm_score": scoring_data[4] if len(scoring_data) > 4 else 0,
+                        "roa_score": scoring_data[5] if len(scoring_data) > 5 else 0,
+                        "opoa_score": scoring_data[6] if len(scoring_data) > 6 else 0,
+                        "ic_score": scoring_data[7] if len(scoring_data) > 7 else 0,
+                        "dscr_score": scoring_data[8] if len(scoring_data) > 8 else 0,
+                        "cdr_score": scoring_data[9] if len(scoring_data) > 9 else 0,
+                        "ccr_score": scoring_data[10] if len(scoring_data) > 10 else 0,
+                        "std_score": scoring_data[11] if len(scoring_data) > 11 else 0,
+                        "tdcd_score": scoring_data[12] if len(scoring_data) > 12 else 0,
+                        "at_score": scoring_data[13] if len(scoring_data) > 13 else 0,
+                        "cfs_score": scoring_data[14] if len(scoring_data) > 14 else 0,
+                        "car_score": scoring_data[15] if len(scoring_data) > 15 else 0
+                    }
+                    total_score = sum([score for score in scoring_data_dict.values() if isinstance(score, (int, float))])
+                else:
+                    total_score = 0
+                    scoring_data_dict = {}
+
+                # Prepare transformed data for submission
+                transformed_data = {**scoring_data_dict, "total_score": total_score, 
+                                    "bs_id": data['balance_id'],
+                                    "is_id": data['income_id'],
+                                    "cfs_id": data['cash_id'],
+                                    "llm_id": data["llm_id"]}
+
+                # Log the transformed data to verify it's correct
+                print(f"Sending transformed data: {transformed_data}")
+
+                # Sending transformed data to the database URL
+                try:
+                    response = requests.post(url, json=transformed_data)
+                    response.raise_for_status()
+                    return {'status': 'success', 'response': response.json()}
+                except requests.exceptions.RequestException as e:
+                    return {'status': 'error', 'error': str(e)}
+                
+            
+            final = store_scoring_data(output, url)
+
+            print("Printing final DaTABASE Message-------------")
+            print(final)
+
+            st.session_state.output = output_data
             st.write("### Processed Output:")
-            st.json(output)
+            st.json(output_data)
 
             st.switch_page("pages/formula.py")
