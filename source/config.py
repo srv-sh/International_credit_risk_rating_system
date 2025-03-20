@@ -137,17 +137,22 @@ class AgentCall:
         with open('json/variables.json', 'r') as json_file:
             data = json.load(json_file)
 
-        # Clean the system_prompt by removing extra spaces, newlines, and escaping quotes
-        cleaned_prompt = ' '.join(data.get("system_prompt", "").split())  # Removes extra spaces and newlines
-        cleaned_prompt = cleaned_prompt.replace('"', '\\"')  # Escape double quotes
+        # Get the prompt from the JSON file
+        prompt = data.get("system_prompt", "")
 
-        # Remove any unwanted brackets (both first and second sets)
-        cleaned_prompt = cleaned_prompt.replace("{", "").replace("}", "")  # Remove curly braces
+        # Remove extra spaces, line breaks, and tabs, and join lines into a single string
+        cleaned_prompt = ' '.join(prompt.strip().split())
 
-        # Update the system_prompt in the loaded data with the cleaned prompt
+        # Remove unnecessary white spaces between words
+        cleaned_prompt = re.sub(r'\s{2,}', ' ', cleaned_prompt)
+
+        # Escape double quotes for JSON compatibility
+        cleaned_prompt = cleaned_prompt.replace('"', '\\"')
+
+        # Update the prompt in the JSON data
         data["system_prompt"] = cleaned_prompt
 
-        # Save the updated JSON back to the file
+        # Save the cleaned prompt back to the JSON file
         with open('json/variables.json', 'w') as json_file:
             json.dump(data, json_file, indent=4)
 

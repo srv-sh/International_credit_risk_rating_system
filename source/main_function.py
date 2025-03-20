@@ -45,23 +45,21 @@ class Main:
         
 
     def store_llm_data(self, database_url, markdown, results):
-    
-        sheet = InputList()
 
+        sheet = InputList()
 
         with open('json/variables.json', 'r') as file:
             data = json.load(file)
-        
 
-        # Assuming data is loaded properly and markdown/output is prepared
+        # Convert all required fields to strings
         transformed_data = {
-            "system_prompt": data['system_prompt'],  # Ensure this is a plain string
-            "required_params": sheet.item,           # List of required parameters
-            "list_of_params": markdown,              # Ensure this is a properly formatted string
-            "response": json.loads(results),         # Ensure this is a valid JSON object if required by the API
-            "bs_id": data['balance_id'],             # Ensure this is an integer
-            "is_id": data['income_id'],              # Ensure this is an integer
-            "cfs_id": data['cash_id']                # Ensure this is an integer
+            "system_prompt": str(data['system_prompt']),
+            "required_params": str(sheet.item),
+            "list_of_params": str(markdown),
+            "response": str(results),  # Directly convert results to string
+            "bs_id": data['balance_id'],
+            "is_id": data['income_id'],
+            "cfs_id": data['cash_id']
         }
 
         # Log the transformed data to verify it's correct
@@ -74,6 +72,7 @@ class Main:
             return {'status': 'success', 'response': response.json()}
         except requests.exceptions.RequestException as e:
             return {'status': 'error', 'error': str(e)}
+
 
         
 
@@ -122,10 +121,22 @@ class Main:
             print("JSON data not found.")
 
         url = "http://192.168.10.50:8000/store_llm_data"
-        a = self.store_llm_data(url, self.markdown_output, results)
+        storedb = self.store_llm_data(url, self.markdown_output, results)
 
-        print(f"LLM DATABASE MESSAGE: {a}")
+        print(f"THE DATABASE RESPONSE IS: {storedb}")
 
+        # Step 1: Load the JSON file
+        with open('json/variables.json', 'r') as file:
+            data = json.load(file)
+
+        # Step 2: Modify the value of a specific key
+        data['llm_id'] = storedb['response']['id']
+
+        # Step 3: Save the modified data back to the JSON file
+        with open('json/variables.json', 'w') as file:
+            json.dump(data, file, indent=4)
+
+        print("Key value updated successfully!")
 
         return results
 
@@ -215,71 +226,88 @@ class Main:
 
         if data:  
             output_data = []
+            output = []
 
             try:
                 dtn = calc.dtn_calc()
                 if dtn is not None:
                     output_data.append({"item": "dtn", "value": dtn})
+                    output.append(dtn)
 
                 dta = calc.dta_calc()
                 if dta is not None:
                     output_data.append({"item": "dta", "value": dta})
+                    output.append(dta)
 
                 current_ratio = calc.current_ratio_calc()
                 if current_ratio is not None:
                     output_data.append({"item": "current_ratio", "value": current_ratio})
+                    output.append(current_ratio)
 
                 cash_ratio = calc.cash_ratio_calc()
                 if cash_ratio is not None:
                     output_data.append({"item": "cash_ratio", "value": cash_ratio})
+                    output.append(cash_ratio)
 
                 npm = calc.npm_calc()
                 if npm is not None:
                     output_data.append({"item": "npm", "value": npm})
+                    output.append(npm)
 
                 roa = calc.roa_calc()
                 if roa is not None:
                     output_data.append({"item": "roa", "value": roa})
+                    output.append(roa)
 
                 opoa = calc.opoa_calc()
                 if opoa is not None:
                     output_data.append({"item": "opoa", "value": opoa})
+                    output.append(opoa)
 
                 ic = calc.ic_calc()
                 if ic is not None:
                     output_data.append({"item": "ic", "value": ic})
+                    output.append(ic)
 
                 dscr = calc.dscr_calc()
                 if dscr is not None:
                     output_data.append({"item": "dscr", "value": dscr})
+                    output.append(dscr)
 
                 cdr = calc.cdr_calc()
                 if cdr is not None:
                     output_data.append({"item": "cdr", "value": cdr})
+                    output.append(cdr)
 
                 ccr = calc.ccr_calc()
                 if ccr is not None:
                     output_data.append({"item": "ccr", "value": ccr})
+                    output.append(ccr)
 
                 std = calc.std_calc()
                 if std is not None:
                     output_data.append({"item": "std", "value": std})
+                    output.append(std)
 
                 tdcd = calc.tdcd_calc()
                 if tdcd is not None:
                     output_data.append({"item": "tdcd", "value": tdcd})
+                    output.append(tdcd)
 
                 at = calc.at_calc()
                 if at is not None:
                     output_data.append({"item": "at", "value": at})
+                    output.append(at)
 
                 cfs = calc.cfs_calc()
                 if cfs is not None:
                     output_data.append({"item": "cfs", "value": cfs})
+                    output.append(cfs)
 
                 car = calc.car_calc()
                 if car is not None:
                     output_data.append({"item": "car", "value": car})
+                    output.append(car)
 
             except Exception as e:
                 print(f"Error in calculations: {e}")
@@ -293,7 +321,7 @@ class Main:
         else:
             print("No data to process.")
 
-        return output_data
+        return output_data, output
     
 
 
