@@ -149,8 +149,6 @@ class Main:
 
         print("intermediate_extract:", intermediate_extract)
 
-        st.session_state.intermediate = intermediate_extract
-
         if isinstance(input_data, str):
             try:
                 input_data = json.loads(input_data)  # Convert string to JSON
