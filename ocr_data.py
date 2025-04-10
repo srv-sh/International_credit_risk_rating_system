@@ -63,6 +63,6 @@ if files and submit:
     
     if input_data:
         st.session_state.input = input_data
-        switch_page("bs")
+        switch_page("ocr_display")
     else:
         st.warning("Error processing files.")
