@@ -10,10 +10,19 @@ import requests
 
 st.set_page_config(layout="wide")  # Ensures the app uses the full width of the page
 
-# Function to display the DataFrame and allow editing
 def display_editable_dataframe(data):
-    if data:
-        cfs_df = pd.DataFrame(data['cfs']['processed_response'])  # Assuming 'cfs' is the data of interest
+    if data and 'cfs' in data and 'processed_response' in data['cfs']:
+        processed_data = data['cfs']['processed_response']
+
+        # Convert list of dicts into DataFrame
+        cfs_df = pd.DataFrame(processed_data)
+
+        # Optional: Reorder columns to show "Particulars" first if it exists
+        columns = cfs_df.columns.tolist()
+        if "Particulars" in columns:
+            columns.remove("Particulars")
+            cfs_df = cfs_df[["Particulars"] + sorted(columns)]
+
         return cfs_df
     else:
         return None
@@ -56,6 +65,75 @@ if 'files' not in st.session_state:
 else:
     files = st.session_state.files
 
+
+
+
+# Load and store dataframe in session state
+cfs_df = display_editable_dataframe(input_data)
+if cfs_df is not None:
+    if 'cfs_df' not in st.session_state:
+        st.session_state.cfs_df = cfs_df
+    else:
+        cfs_df = st.session_state.cfs_df
+
+    st.markdown("### Column and Row Operations")
+
+    row_col1, row_col2 = st.columns([1, 1])
+
+    with row_col1:
+        if 'selected_index' not in st.session_state:
+            st.session_state.selected_index = len(cfs_df)
+
+        selected_index = st.text_input("Index to add row:", value=str(st.session_state.selected_index))
+        if selected_index.isdigit():
+            st.session_state.selected_index = int(selected_index)
+
+        if st.button("Add Row"):
+            empty_row = {col: '' for col in cfs_df.columns}
+            new_row_df = pd.DataFrame([empty_row])
+            top_part = cfs_df.iloc[:st.session_state.selected_index]
+            bottom_part = cfs_df.iloc[st.session_state.selected_index:]
+            edited_df = pd.concat([top_part, new_row_df, bottom_part], ignore_index=True)
+
+            st.session_state.cfs_df = edited_df
+            st.session_state.cfs = edited_df.to_dict(orient='list')
+            st.success(f"Empty row added at index {st.session_state.selected_index}!")
+
+    with row_col2:
+        column_name_input = st.text_input("Enter new column name:", "New Column")
+        if st.button("Add Column"):
+            new_column_name = column_name_input.strip() or f"New Column {len(cfs_df.columns) + 1}"
+            cfs_df[new_column_name] = ''
+            st.session_state.cfs_df = cfs_df
+            st.session_state.cfs = cfs_df.to_dict(orient='list')
+            st.success(f"New column '{new_column_name}' added!")
+
+    col_rename, col_delete = st.columns(2)
+
+    with col_rename:
+        st.markdown("#### Rename a Column")
+        col_to_rename = st.selectbox("Select a column to rename:", cfs_df.columns, key="rename_selector")
+        new_col_name = st.text_input("Enter new column name:", key="rename_input")
+        if st.button("Rename Column"):
+            if new_col_name.strip():
+                cfs_df.rename(columns={col_to_rename: new_col_name.strip()}, inplace=True)
+                st.session_state.cfs_df = cfs_df
+                st.session_state.cfs = cfs_df.to_dict(orient='list')
+                st.success(f"Column '{col_to_rename}' renamed to '{new_col_name.strip()}'!")
+            else:
+                st.warning("Please enter a valid new column name.")
+
+    with col_delete:
+        column_to_delete = st.selectbox("Select a column to delete:", cfs_df.columns)
+        if st.button("Delete Column"):
+            if column_to_delete:
+                cfs_df.drop(columns=[column_to_delete], inplace=True)
+                st.session_state.cfs_df = cfs_df
+                st.session_state.cfs = cfs_df.to_dict(orient='list')
+                st.success(f"Column '{column_to_delete}' deleted!")
+
+
+
 # Display image and DataFrame
 col1, col2 = st.columns(2)
 
@@ -65,80 +143,9 @@ with col1:
     st.image(image, caption="Cashflow Sheet", use_container_width=True)
 
 with col2:
-    cfs_df = display_editable_dataframe(input_data)
-
-    if cfs_df is not None:
+    
         st.write("### Edit Financial Data")
-
-        # Check if the dataframe is already stored in session state
-        if 'cfs_df' not in st.session_state:
-            st.session_state.cfs_df = cfs_df
-        else:
-            cfs_df = st.session_state.cfs_df
-
-        # Adding row position bar and "Add Row" button above the table
-        row_col1, row_col2 = st.columns([1, 1])
-
-        # Option to add a row
-        with row_col1:
-            if 'selected_index' not in st.session_state:
-                st.session_state.selected_index = len(cfs_df)
-
-            # Input box for index display (editable)
-            selected_index = st.text_input(
-                "Index to add row:", 
-                value=str(st.session_state.selected_index)
-            )
-
-            # Update session state when the index is edited manually
-            if selected_index.isdigit():
-                st.session_state.selected_index = int(selected_index)
-
-            # Add the row at the selected index when button is clicked
-            if st.button("Add Row"):
-                # Create an empty row with the same columns as the DataFrame
-                empty_row = {col: '' for col in cfs_df.columns}
-                new_row_df = pd.DataFrame([empty_row])
-
-                # Split the DataFrame and insert the new row at the specified index
-                top_part = cfs_df.iloc[:st.session_state.selected_index]
-                bottom_part = cfs_df.iloc[st.session_state.selected_index:]
-
-                edited_df = pd.concat([top_part, new_row_df, bottom_part], ignore_index=True)
-
-                # Save changes to session state
-                st.session_state.cfs_df = edited_df
-                st.session_state.cfs = edited_df.to_dict(orient='list')
-
-                st.success(f"Empty row added successfully at index {st.session_state.selected_index}!")
-
-        # Option to add a column
-        with row_col2:
-            column_name_input = st.text_input("Enter new column name:", "New Column")
-            if st.button("Add Column"):
-                # Use the input name for the new column
-                new_column_name = column_name_input.strip() or f"New Column {len(cfs_df.columns) + 1}"
-                
-                # Create a new column with empty values for all rows
-                cfs_df[new_column_name] = ''
-
-                # Save changes to session state
-                st.session_state.cfs_df = cfs_df
-                st.session_state.cfs = cfs_df.to_dict(orient='list')
-
-                st.success(f"New column '{new_column_name}' added successfully!")
-
-        # Option to delete a column
-        column_to_delete = st.selectbox("Select a column to delete:", cfs_df.columns)
-
-        if st.button("Delete Column"):
-            # Delete the selected column
-            if column_to_delete:
-                cfs_df.drop(columns=[column_to_delete], inplace=True)
-                st.session_state.cfs_df = cfs_df
-                st.session_state.cfs = cfs_df.to_dict(orient='list')
-
-                st.success(f"Column '{column_to_delete}' deleted successfully!")
+        cfs_df = st.session_state.cfs_df
 
         # Reset index for display in the table
         edited_df_with_index = cfs_df.reset_index(drop=False)  # Reset index and include it as a column
