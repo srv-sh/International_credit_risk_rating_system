@@ -85,7 +85,8 @@ if cfs_df is not None:
             st.session_state.selected_index = len(cfs_df)
 
         selected_index = st.text_input("Index to add row:", value=str(st.session_state.selected_index))
-        if selected_index.isdigit():
+        # if selected_index.isdigit():
+        if isinstance(selected_index, int):
             st.session_state.selected_index = int(selected_index)
 
         if st.button("Add Row"):

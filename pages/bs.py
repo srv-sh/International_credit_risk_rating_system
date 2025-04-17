@@ -68,7 +68,8 @@ if bs_df is not None:
         selected_index_input = st.text_input("Index to add row:", value=str(selected_index), max_chars=5, key="selected_index", label_visibility="collapsed")
 
         # Validate that the entered index is a valid integer
-        if selected_index_input.isdigit():
+        # if selected_index_input.isdigit():
+        if isinstance(selected_index_input, int):
             selected_index = int(selected_index_input)
         else:
             selected_index = len(bs_df)  # Revert to default if input is invalid

@@ -1,46 +1,49 @@
 import streamlit as st
-import pandas as pd
+from streamlit_option_menu import option_menu
 
-# Sample data (original table content)
-data = {
-    "Key": ["Total assets", "Total liabilities", "Equity"],
-    "Particulars": ["assets", "property, plant and equipment", "right-of-use assets"]
-}
+# # 1. as sidebar menu
+# with st.sidebar:
+#     selected = option_menu("Main Menu", ["Home", 'Settings'], 
+#         icons=['house', 'gear'], menu_icon="cast", default_index=1)
+#     selected
 
-df = pd.DataFrame(data)
+# # 2. horizontal menu
+# selected2 = option_menu(None, ["Home", "Upload", "Tasks", 'Settings'], 
+#     icons=['house', 'cloud-upload', "list-task", 'gear'], 
+#     menu_icon="cast", default_index=0, orientation="horizontal")
+# selected2
 
-# Dropdown options
-options = [
-    "assets",
-    "property, plant and equipment",
-    "right-of-use assets",
-    "equity",
-    "intangible assets"
-]
+# # 3. CSS style definitions
+# selected3 = option_menu(None, ["Home", "Upload",  "Tasks", 'Settings'], 
+#     icons=['house', 'cloud-upload', "list-task", 'gear'], 
+#     menu_icon="cast", default_index=0, orientation="horizontal",
+#     styles={
+#         "container": {"padding": "0!important", "background-color": "#fafafa"},
+#         "icon": {"color": "orange", "font-size": "25px"}, 
+#         "nav-link": {"font-size": "25px", "text-align": "left", "margin":"0px", "--hover-color": "#eee"},
+#         "nav-link-selected": {"background-color": "green"},
+#     }
+# )
 
-# Display the table and dropdowns
-st.title("Interactive Table with Dropdowns in Each Cell")
-
-# Create empty list to store updated values
-updated_particulars = []
-
-for index, row in df.iterrows():
-    # Displaying the key (column 1)
-    st.write(f"### Row {index + 1}: {row['Key']}")
-
-    # Creating the dropdown for 'Particulars' column for each row
-    selected_particular = st.selectbox(
-        f"Select Particular for {row['Key']}",
-        options=options,
-        index=options.index(row['Particulars']),  # Setting the current value as the default option
-        key=f"dropdown_{index}"  # Use a unique key for each dropdown
-    )
+# 4. Manual item selection
+if st.session_state.get('switch_button', False):
+    st.session_state['menu_option'] = (st.session_state.get('menu_option', 0) + 1) % 4
+    manual_select = st.session_state['menu_option']
+else:
+    manual_select = None
     
-    # Add the selected particular to the updated list
-    updated_particulars.append(selected_particular)
+selected4 = option_menu(None, ["Home", "Upload", "Tasks", 'Settings'], 
+    icons=['house', 'cloud-upload', "list-task", 'gear'], 
+    orientation="horizontal", manual_select=manual_select, key='menu_4')
+# st.button(f"Move to Next {st.session_state.get('menu_option', 1)}", key='switch_button')
+selected4
 
-# After all rows are updated, display the updated table
-st.write("### Updated Table with Selected Particulars")
-updated_df = df.copy()
-updated_df['Particulars'] = updated_particulars
-st.dataframe(updated_df)
+# # 5. Add on_change callback
+# def on_change(key):
+#     selection = st.session_state[key]
+#     st.write(f"Selection changed to {selection}")
+    
+# selected5 = option_menu(None, ["Home", "Upload", "Tasks", 'Settings'],
+#                         icons=['house', 'cloud-upload', "list-task", 'gear'],
+#                         on_change=on_change, key='menu_5', orientation="horizontal")
+# selected5
