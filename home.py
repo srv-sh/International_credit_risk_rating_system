@@ -1,3 +1,5 @@
+    
+# def app():
 # home.py
 import streamlit as st
 from streamlit_extras.switch_page_button import switch_page
@@ -6,18 +8,19 @@ from dotenv import load_dotenv
 from source.main_function import Main  
 import os
 import torch
-# import streamlit
+from streamlit_option_menu import option_menu
+import importlib
+
+st.set_page_config(
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
 torch.classes.__path__ = [os.path.join(torch.__path__[0], torch.classes.__file__)] 
 
 # or simply:
 torch.classes.__path__ = []
 load_dotenv()
-
-st.set_page_config(
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
 
 hide_menu = """
 <style>
@@ -27,6 +30,7 @@ hide_menu = """
 </style>
 """
 st.markdown(hide_menu, unsafe_allow_html=True)
+
 
 # Create a temporary directory to store the uploaded files
 temp_dir = os.getenv('GET_FILE')
@@ -82,6 +86,8 @@ if files and submit:
         if input_data:
             st.session_state.input = input_data
             switch_page("bs")
+            # page = importlib.import_module("pages.bs")
+            # page.app()
 
 
             # intermediate_values = main_program.intermediate_values(input_data)

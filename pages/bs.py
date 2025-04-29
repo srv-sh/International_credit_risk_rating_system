@@ -1,9 +1,19 @@
+
+# def app():
 import streamlit as st
 import pandas as pd
 import requests
 import json
+import importlib
 
-st.set_page_config(layout="wide")
+# st.set_page_config(layout="wide")
+# st.markdown("""
+#     <style>
+#         .stDataFrame td {
+#             font-weight: 900 !important;  /* Extra bold */
+#         }
+#     </style>
+# """, unsafe_allow_html=True)
 
 def display_editable_dataframe(data):
     if data and 'bs' in data and 'processed_response' in data['bs']:
@@ -18,6 +28,29 @@ def display_editable_dataframe(data):
         return bs_df
     else:
         return None
+    
+
+# def highlight_bold_rows(row):
+#     # Check if ANY cell in the row has ** markers
+#     has_bold = any(
+#         isinstance(val, str) and val.startswith('**') and val.endswith('**')
+#         for val in row
+#     )
+    
+#     # Apply EXTRA BOLD + background to ALL cells in the row if any cell is bold
+#     if has_bold:
+#         return ['font-weight: 900 !important; background-color: #FFF2CC'] * len(row)
+#     else:
+#         return [''] * len(row)
+    
+
+
+
+# def highlight_even_rows(x):
+#     df = pd.DataFrame('', index=x.index, columns=x.columns)
+#     df.loc[df.index % 2 == 0, :] = 'text-decoration: underline'  # Underline text for even rows
+#     return df
+
 
 
 def json_to_markdown_table(json_data):
@@ -134,24 +167,64 @@ with col1:
     image = files[0]
     st.image(image, caption="Balance Sheet", use_container_width=True)
 
+# ... (keep all your previous code until the display section)
+
 with col2:
     st.write("### Edit Financial Data")
     bs_df = st.session_state.bs_df
     edited_df_with_index = bs_df.reset_index(drop=False)
+    
+    on = st.toggle("Edit Table")
+    
+    if on:
+        # Edit mode - use data editor
+        edited_df = st.data_editor(
+            edited_df_with_index,
+            use_container_width=True,
+            height=800,
+            num_rows="dynamic",
+            column_config={
+                "index": st.column_config.NumberColumn(
+                    "Index",
+                    help="Row index",
+                    width="small",
+                )
+            }
+        )
+    else:
+        edited_df = edited_df_with_index
+        def format_bold_html(val):
+            if isinstance(val, str) and val.startswith('**') and val.endswith('**'):
+                return f'<strong style="font-weight:900">{val.strip("*")}</strong>'
+            return str(val)
 
-    edited_df = st.data_editor(
-        edited_df_with_index,
-        use_container_width=True,
-        height=800,
-        num_rows="dynamic",
-        column_config={
-            "index": st.column_config.NumberColumn(
-                "Index",
-                help="Row index",
-                width="small",
-            )
-        }
-    )
+        # Convert to HTML
+        html = bs_df.applymap(format_bold_html).to_html(escape=False, index=False)
+        
+        # Display in scrollable container
+        st.markdown(f"""
+        <div style="height: 800px; overflow-y: auto; margin: 1rem 0;">
+            {html}
+        </div>
+        """, unsafe_allow_html=True)
+
+
+
+    # # Now, use the styled dataframe in st.data_editor:
+    # edited_df = st.data_editor(
+    #     edited_df_with_index,
+    #     use_container_width=True,
+    #     height=800,
+    #     num_rows="dynamic",
+    #     column_config={
+    #         "index": st.column_config.NumberColumn(
+    #             "Index",
+    #             help="Row index",
+    #             width="small",
+    #         )
+    #     }
+    # )
+
 
     if st.button("Next"):
         edited_df_no_index = edited_df.drop(columns=["index"])
@@ -199,6 +272,8 @@ with col2:
 
                 print("✅ Key value updated successfully!")
                 st.switch_page("pages/is.py")
+                # page = importlib.import_module("pages.is")
+                # page.app()
 
             except Exception as e:
                 st.error("⚠️ Failed to update local variables file.")
@@ -207,4 +282,18 @@ with col2:
         else:
             st.error("🚨 Failed to store data in the database.")
             st.error(storedb['error'])
+
+    
+
+    if st.button("Skip"):
+        edited_df_no_index = edited_df.drop(columns=["index"])
+        edited_json = edited_df_no_index.to_dict(orient='list')
+        md = json_to_markdown_table(edited_json)
+
+        input_data['bs']['raw_response']['natural_text'] = md
+        st.session_state.bs_df = edited_df_no_index
+        st.session_state.bs = edited_json
+        st.success("Changes saved successfully as JSON!")
+        st.switch_page("pages/is.py")
+
 

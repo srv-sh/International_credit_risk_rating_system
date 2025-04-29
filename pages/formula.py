@@ -5,7 +5,7 @@ import requests
 import pandas as pd
 
 # Set page configuration
-st.set_page_config(layout="wide")
+# st.set_page_config(layout="wide")
 st.title("Calculation of Quantitative Indicators")
 
 # # Default input data
