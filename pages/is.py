@@ -1,9 +1,12 @@
+
+# def app():
 import streamlit as st
 import pandas as pd
 import json
 import requests
+import importlib
 
-st.set_page_config(layout="wide")
+# st.set_page_config(layout="wide")
 st.title("Financial Data Table")
 
 
@@ -150,24 +153,64 @@ with col1:
     st.write("### Income Sheet")
     st.image(files[1], caption="Income Sheet", use_container_width=True)
 
+# with col2:
+#     st.write("### Edit Financial Data")
+#     is_df = st.session_state.is_df
+
+#     edited_df_with_index = is_df.reset_index(drop=False)
+#     edited_df = st.data_editor(
+#         edited_df_with_index,
+#         use_container_width=True,
+#         height=800,
+#         num_rows="dynamic",
+#         column_config={
+#             "index": st.column_config.NumberColumn(
+#                 "Index", 
+#                 help="Row index", 
+#                 width="small",
+#                 )
+#             }
+#         )
+    
+
 with col2:
     st.write("### Edit Financial Data")
     is_df = st.session_state.is_df
-
     edited_df_with_index = is_df.reset_index(drop=False)
-    edited_df = st.data_editor(
-        edited_df_with_index,
-        use_container_width=True,
-        height=800,
-        num_rows="dynamic",
-        column_config={
-            "index": st.column_config.NumberColumn(
-                "Index", 
-                help="Row index", 
-                width="small",
+    
+    on = st.toggle("Edit Table")
+    
+    if on:
+        # Edit mode - use data editor
+        edited_df = st.data_editor(
+            edited_df_with_index,
+            use_container_width=True,
+            height=800,
+            num_rows="dynamic",
+            column_config={
+                "index": st.column_config.NumberColumn(
+                    "Index",
+                    help="Row index",
+                    width="small",
                 )
             }
         )
+    else:
+        edited_df = edited_df_with_index
+        def format_bold_html(val):
+            if isinstance(val, str) and val.startswith('**') and val.endswith('**'):
+                return f'<strong style="font-weight:900">{val.strip("*")}</strong>'
+            return str(val)
+
+        # Convert to HTML
+        html = is_df.applymap(format_bold_html).to_html(escape=False, index=False)
+        
+        # Display in scrollable container
+        st.markdown(f"""
+        <div style="height: 800px; overflow-y: auto; margin: 1rem 0;">
+            {html}
+        </div>
+        """, unsafe_allow_html=True)
 
     # ----------------------------- #
     # Final Save & Database Push
@@ -187,5 +230,20 @@ with col2:
             update_json_file('income_id', income_id)
             st.success("Changes saved and data stored successfully!")
             st.switch_page("pages/cfs.py")
+            # page = importlib.import_module("pages.cfs")
+            # page.app()
         else:
             st.error(f"Database error: {db_response['error']}")
+
+
+
+    if st.button("Skip"):
+        final_df = edited_df.drop(columns=["index"])
+        final_json = final_df.to_dict(orient='list')
+        markdown = json_to_markdown_table(final_json)
+
+        input_data['is']['raw_response']['natural_text'] = markdown
+        st.session_state.is_df = final_df
+        st.session_state.pls = final_json
+        st.success("Changes saved successfully as JSON!")
+        st.switch_page("pages/cfs.py")

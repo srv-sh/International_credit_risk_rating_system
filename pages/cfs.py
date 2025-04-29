@@ -1,3 +1,5 @@
+    
+# def app():
 import streamlit as st
 import json
 import pandas as pd
@@ -7,8 +9,9 @@ from collections import defaultdict
 from source.main_function import Main
 import json
 import requests
+import importlib
 
-st.set_page_config(layout="wide")  # Ensures the app uses the full width of the page
+# st.set_page_config(layout="wide")  # Ensures the app uses the full width of the page
 
 def display_editable_dataframe(data):
     if data and 'cfs' in data and 'processed_response' in data['cfs']:
@@ -143,15 +146,38 @@ with col1:
     image = files[2]
     st.image(image, caption="Cashflow Sheet", use_container_width=True)
 
-with col2:
+# with col2:
     
-        st.write("### Edit Financial Data")
-        cfs_df = st.session_state.cfs_df
+#         st.write("### Edit Financial Data")
+#         cfs_df = st.session_state.cfs_df
 
-        # Reset index for display in the table
-        edited_df_with_index = cfs_df.reset_index(drop=False)  # Reset index and include it as a column
+#         # Reset index for display in the table
+#         edited_df_with_index = cfs_df.reset_index(drop=False)  # Reset index and include it as a column
 
-        # Display editable DataFrame with index shown in the UI
+#         # Display editable DataFrame with index shown in the UI
+#         edited_df = st.data_editor(
+#             edited_df_with_index,
+#             use_container_width=True,
+#             height=800,
+#             num_rows="dynamic",
+#             column_config={
+#                 "index": st.column_config.NumberColumn(
+#                     "Index",  # Display the index as a column
+#                     help="Row index",
+#                     width="small",
+#                 )
+#             }
+#         )
+
+with col2:
+    st.write("### Edit Financial Data")
+    cfs_df = st.session_state.cfs_df
+    edited_df_with_index = cfs_df.reset_index(drop=False)
+    
+    on = st.toggle("Edit Table")
+    
+    if on:
+        # Edit mode - use data editor
         edited_df = st.data_editor(
             edited_df_with_index,
             use_container_width=True,
@@ -159,12 +185,29 @@ with col2:
             num_rows="dynamic",
             column_config={
                 "index": st.column_config.NumberColumn(
-                    "Index",  # Display the index as a column
+                    "Index",
                     help="Row index",
                     width="small",
                 )
             }
         )
+    else:
+        edited_df = edited_df_with_index
+        def format_bold_html(val):
+            if isinstance(val, str) and val.startswith('**') and val.endswith('**'):
+                return f'<strong style="font-weight:900">{val.strip("*")}</strong>'
+            return str(val)
+
+        # Convert to HTML
+        html = cfs_df.applymap(format_bold_html).to_html(escape=False, index=False)
+        
+        # Display in scrollable container
+        st.markdown(f"""
+        <div style="height: 800px; overflow-y: auto; margin: 1rem 0;">
+            {html}
+        </div>
+        """, unsafe_allow_html=True)
+
 
         # Save changes
         if st.button("Next"):
