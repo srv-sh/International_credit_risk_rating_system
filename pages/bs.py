@@ -4,16 +4,61 @@ import streamlit as st
 import pandas as pd
 import requests
 import json
-import importlib
+from streamlit_drawable_canvas import st_canvas
+from PIL import Image, ImageDraw
+import math
+from io import BytesIO
+import base64
 
 # st.set_page_config(layout="wide")
-# st.markdown("""
-#     <style>
-#         .stDataFrame td {
-#             font-weight: 900 !important;  /* Extra bold */
-#         }
-#     </style>
-# """, unsafe_allow_html=True)
+st.markdown("""
+    <style>
+        /* Container class to wrap inputs in smaller width */
+        .css-1cpxqw2, .css-1kyxreq {
+            max-width: 300px;  /* max width for individual widgets */
+            width: 100% !important;
+        }
+
+        /* Text input */
+        .stTextInput input {
+            font-size: 13px;
+            padding: 6px;
+            height: 32px;
+            width: 100% !important;
+        }
+
+        /* Number input */
+        .stNumberInput input {
+            font-size: 13px;
+            padding: 6px;
+            height: 32px;
+            width: 100% !important;
+        }
+
+        /* Selectbox */
+        .stSelectbox div[data-baseweb="select"] {
+            font-size: 13px;
+            padding: 4px;
+            width: 100% !important;
+        }
+
+        /* Buttons */
+        .stButton > button {
+            font-size: 13px !important;
+            padding: 6px 12px !important;
+            border-radius: 6px !important;
+            width: 100% !important;
+        }
+
+        label {
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+
+
 
 def display_editable_dataframe(data):
     if data and 'bs' in data and 'processed_response' in data['bs']:
@@ -28,28 +73,6 @@ def display_editable_dataframe(data):
         return bs_df
     else:
         return None
-    
-
-# def highlight_bold_rows(row):
-#     # Check if ANY cell in the row has ** markers
-#     has_bold = any(
-#         isinstance(val, str) and val.startswith('**') and val.endswith('**')
-#         for val in row
-#     )
-    
-#     # Apply EXTRA BOLD + background to ALL cells in the row if any cell is bold
-#     if has_bold:
-#         return ['font-weight: 900 !important; background-color: #FFF2CC'] * len(row)
-#     else:
-#         return [''] * len(row)
-    
-
-
-
-# def highlight_even_rows(x):
-#     df = pd.DataFrame('', index=x.index, columns=x.columns)
-#     df.loc[df.index % 2 == 0, :] = 'text-decoration: underline'  # Underline text for even rows
-#     return df
 
 
 
@@ -79,8 +102,14 @@ if 'files' not in st.session_state:
 else:
     files = st.session_state.files
 
+
+texts = input_data["bs"]["paddleOCR"]["text"]
+bounding_boxes = input_data["bs"]["paddleOCR"]["bbox"] 
+
+
 # Load and store dataframe in session state
 bs_df = display_editable_dataframe(input_data)
+
 if bs_df is not None:
     if 'bs_df' not in st.session_state:
         st.session_state.bs_df = bs_df
@@ -91,70 +120,121 @@ if bs_df is not None:
 
     # row_col1, row_col2 = st.columns([1, 1])
 
-    row_col1, row_col2 = st.columns([1, 1])
+    row_col1, row_col2, row_col3 = st.columns([1, 1, 1])
 
     with row_col1:
-        # Set default selected_index to the number of rows in bs_df if not provided
-        selected_index = len(bs_df)
+        st.markdown('<div class="three-col-section">', unsafe_allow_html=True)
+        st.subheader("🧩 Add Row / Rename Column")
 
-        # Text input for the user to specify the index
-        selected_index_input = st.text_input("Index to add row:", value=str(selected_index), max_chars=5, key="selected_index", label_visibility="collapsed")
+        if 'selected_index' not in st.session_state:
+            st.session_state.selected_index = len(bs_df)
 
-        # Validate that the entered index is a valid integer
-        # if selected_index_input.isdigit():
-        if isinstance(selected_index_input, int):
+        selected_index_input = st.text_input("Index to add row:", value=str(st.session_state.selected_index))
+
+        if selected_index_input.isdigit():
             selected_index = int(selected_index_input)
+            st.session_state.selected_index = selected_index
         else:
-            selected_index = len(bs_df)  # Revert to default if input is invalid
+            selected_index = len(bs_df)
+            st.warning("Please enter a valid integer index. Using end of dataframe as default.")
 
-        # Validate the index is within bounds
         if selected_index < 0 or selected_index > len(bs_df):
-            st.error(f"Index {selected_index} is out of bounds. Please enter a valid index.")
-        else:
-            if st.button("Add Row", key="add_row_button"):
-                empty_row = {col: '' for col in bs_df.columns}
-                new_row_df = pd.DataFrame([empty_row])
-                top_part = bs_df.iloc[:selected_index]
-                bottom_part = bs_df.iloc[selected_index:]
-                edited_df = pd.concat([top_part, new_row_df, bottom_part], ignore_index=True)
-                # Update the DataFrame in session state
-                st.session_state.bs_df = edited_df
-                st.session_state.bs = edited_df.to_dict(orient='list')
-                st.success(f"Empty row added at index {selected_index}!")
+            st.error(f"Index {selected_index} is out of bounds. Using end of dataframe instead.")
+            selected_index = len(bs_df)
+            st.session_state.selected_index = selected_index
+
+        if st.button("➕ Add Row", key="add_row_button"):
+            empty_row = {col: '' for col in bs_df.columns}
+            new_row_df = pd.DataFrame([empty_row])
+            top_part = bs_df.iloc[:selected_index]
+            bottom_part = bs_df.iloc[selected_index:]
+            edited_df = pd.concat([top_part, new_row_df, bottom_part], ignore_index=True)
+            st.session_state.bs_df = edited_df
+            st.session_state.bs = edited_df.to_dict(orient='list')
+            st.success(f"Empty row added at index {selected_index}!")
+
+        col_to_rename = st.selectbox("Select column to rename", bs_df.columns, key="rename_selector")
+        new_col_name = st.text_input("New column name", key="rename_input", max_chars=15)
+        if st.button("✏️ Rename Column", key="rename_column_button"):
+            if new_col_name.strip():
+                bs_df.rename(columns={col_to_rename: new_col_name.strip()}, inplace=True)
+                st.session_state.bs_df = bs_df
+                st.session_state.bs = bs_df.to_dict(orient='list')
+                st.success(f"Renamed '{col_to_rename}' to '{new_col_name.strip()}'")
+            else:
+                st.warning("Please enter a valid new column name.")
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
     with row_col2:
-        column_name_input = st.text_input("Enter new column name:", "New Column", max_chars=15, key="new_column_name", label_visibility="collapsed")
-        if st.button("Add Column", key="add_column_button"):
+        st.markdown('<div class="three-col-section">', unsafe_allow_html=True)
+        st.subheader("📐 Add / Delete Column")
+
+        column_name_input = st.text_input("New column name", "New Column", max_chars=15, key="new_column_name")
+        if st.button("➕ Add Column", key="add_column_button"):
             new_column_name = column_name_input.strip() or f"New Column {len(bs_df.columns) + 1}"
             bs_df[new_column_name] = ''
             st.session_state.bs_df = bs_df
             st.session_state.bs = bs_df.to_dict(orient='list')
             st.success(f"New column '{new_column_name}' added!")
 
-    # Columns for renaming and deleting columns
-    col_rename, col_delete = st.columns([1, 1])
-
-    with col_rename:
-        st.markdown("#### Rename a Column", help="Select a column to rename.")
-        col_to_rename = st.selectbox("Select a column to rename:", bs_df.columns, key="rename_selector", label_visibility="collapsed")
-        new_col_name = st.text_input("New name:", key="rename_input", max_chars=15, label_visibility="collapsed")
-        if st.button("Rename Column", key="rename_column_button"):
-            if new_col_name.strip():
-                bs_df.rename(columns={col_to_rename: new_col_name.strip()}, inplace=True)
-                st.session_state.bs_df = bs_df
-                st.session_state.bs = bs_df.to_dict(orient='list')
-                st.success(f"Column '{col_to_rename}' renamed to '{new_col_name.strip()}'!")
-            else:
-                st.warning("Please enter a valid new column name.")
-
-    with col_delete:
-        column_to_delete = st.selectbox("Select a column to delete:", bs_df.columns, key="delete_selector", label_visibility="collapsed")
-        if st.button("Delete Column", key="delete_column_button"):
+        column_to_delete = st.selectbox("Select column to delete", bs_df.columns, key="delete_selector")
+        if st.button("❌ Delete Column", key="delete_column_button"):
             if column_to_delete:
                 bs_df.drop(columns=[column_to_delete], inplace=True)
                 st.session_state.bs_df = bs_df
                 st.session_state.bs = bs_df.to_dict(orient='list')
-                st.success(f"Column '{column_to_delete}' deleted!")
+                st.success(f"Deleted column '{column_to_delete}'")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with row_col3:
+        st.markdown('<div class="three-col-section">', unsafe_allow_html=True)
+        st.subheader("🖊️ Edit Cell")
+
+        bs_df = st.session_state.bs_df
+        edited_df_with_index = bs_df.reset_index(drop='level_0' in bs_df.columns)
+
+        # Initialize clicked text in session state
+        if "clicked_text" not in st.session_state:
+            st.session_state.clicked_text = ""
+
+        selected_row = st.number_input("Row", min_value=0, max_value=len(edited_df_with_index)-1, step=1)
+        selected_column = st.selectbox("Column", edited_df_with_index.columns)
+
+        st.info(f"Inserting {st.session_state.clicked_text} in Row {selected_row}, Column '{selected_column}'")
+
+        if st.button("📥 Insert Text"):
+            if selected_column in edited_df_with_index.columns:
+                edited_df_with_index.at[selected_row, selected_column] = st.session_state.clicked_text
+                st.success(f"Inserted '{st.session_state.clicked_text}' into row {selected_row}, column '{selected_column}'")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # # Columns for renaming and deleting columns
+    # col_rename, col_delete = st.columns([1, 1])
+
+    # with col_rename:
+    #     st.markdown("#### Rename a Column", help="Select a column to rename.")
+    #     col_to_rename = st.selectbox("Select a column to rename:", bs_df.columns, key="rename_selector", label_visibility="collapsed")
+    #     new_col_name = st.text_input("New name:", key="rename_input", max_chars=15, label_visibility="collapsed")
+    #     if st.button("Rename Column", key="rename_column_button"):
+    #         if new_col_name.strip():
+    #             bs_df.rename(columns={col_to_rename: new_col_name.strip()}, inplace=True)
+    #             st.session_state.bs_df = bs_df
+    #             st.session_state.bs = bs_df.to_dict(orient='list')
+    #             st.success(f"Column '{col_to_rename}' renamed to '{new_col_name.strip()}'!")
+    #         else:
+    #             st.warning("Please enter a valid new column name.")
+
+    # with col_delete:
+    #     column_to_delete = st.selectbox("Select a column to delete:", bs_df.columns, key="delete_selector", label_visibility="collapsed")
+    #     if st.button("Delete Column", key="delete_column_button"):
+    #         if column_to_delete:
+    #             bs_df.drop(columns=[column_to_delete], inplace=True)
+    #             st.session_state.bs_df = bs_df
+    #             st.session_state.bs = bs_df.to_dict(orient='list')
+    #             st.success(f"Column '{column_to_delete}' deleted!")
 
 
 
@@ -164,44 +244,87 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.write("### Balance Sheet")
-    image = files[0]
-    st.image(image, caption="Balance Sheet", use_container_width=True)
 
-# ... (keep all your previous code until the display section)
+    bg_image = Image.open(files[0])
+
+    canvas_result = st_canvas(
+        fill_color="rgba(255, 165, 0, 0.3)",
+        stroke_width=2,
+        background_image=bg_image,
+        height=bg_image.height,
+        width=bg_image.width,
+        drawing_mode="rect",
+        key="canvas",
+    )
+
+    def get_bbox_center(bbox):
+        points = list(zip(bbox[::2], bbox[1::2]))
+        x_coords = [pt[0] for pt in points]
+        y_coords = [pt[1] for pt in points]
+        return (sum(x_coords) / len(x_coords), sum(y_coords) / len(y_coords))
+
+    # Initialize clicked text in session state
+    if "clicked_text" not in st.session_state:
+        st.session_state.clicked_text = ""
+
+    if canvas_result.json_data is not None:
+        objects = canvas_result.json_data.get("objects", [])
+        if objects:
+            x_click = objects[-1]["left"]
+            y_click = objects[-1]["top"]
+
+            min_dist = float("inf")
+            closest_index = -1
+
+            for i, bbox in enumerate(bounding_boxes):
+                cx, cy = get_bbox_center(bbox)
+                dist = math.hypot(cx - x_click, cy - y_click)
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_index = i
+
+            if closest_index != -1:
+                st.session_state.clicked_text = texts[closest_index]
+                st.success(f"Closest text: {st.session_state.clicked_text}")
+                st.write(f"Clicked at: ({round(x_click)}, {round(y_click)})")
 
 with col2:
     st.write("### Edit Financial Data")
-    bs_df = st.session_state.bs_df
-    edited_df_with_index = bs_df.reset_index(drop=False)
-    
+
+    # bs_df = st.session_state.bs_df
+    # edited_df_with_index = bs_df.reset_index(drop='level_0' in bs_df.columns)
+
+    # # Row and column selectors
+    # selected_row = st.number_input("Select Row to Edit", min_value=0, max_value=len(edited_df_with_index)-1, step=1)
+    # selected_column = st.selectbox("Select Column", edited_df_with_index.columns)
+
+    # st.info(f"Inserting {st.session_state.clicked_text} in the Row: '{selected_row}', Column: '{selected_column}'...")
+
+    # # Button to apply clicked text to table
+    # if st.button("Insert Clicked Text into Table"):
+    #     if selected_column in edited_df_with_index.columns:
+    #         edited_df_with_index.at[selected_row, selected_column] = st.session_state.clicked_text
+    #         st.success(f"Inserted '{st.session_state.clicked_text}' into row {selected_row}, column '{selected_column}'")
+
+    # Toggle editor
     on = st.toggle("Edit Table")
-    
+
     if on:
-        # Edit mode - use data editor
         edited_df = st.data_editor(
             edited_df_with_index,
             use_container_width=True,
             height=800,
-            num_rows="dynamic",
-            column_config={
-                "index": st.column_config.NumberColumn(
-                    "Index",
-                    help="Row index",
-                    width="small",
-                )
-            }
+            num_rows="dynamic"
         )
+        st.session_state.bs_df = edited_df
     else:
-        edited_df = edited_df_with_index
+        edited_df = st.session_state.bs_df
         def format_bold_html(val):
             if isinstance(val, str) and val.startswith('**') and val.endswith('**'):
                 return f'<strong style="font-weight:900">{val.strip("*")}</strong>'
             return str(val)
 
-        # Convert to HTML
-        html = bs_df.applymap(format_bold_html).to_html(escape=False, index=False)
-        
-        # Display in scrollable container
+        html = edited_df_with_index.applymap(format_bold_html).to_html(escape=False, index=False)
         st.markdown(f"""
         <div style="height: 800px; overflow-y: auto; margin: 1rem 0;">
             {html}
@@ -227,7 +350,12 @@ with col2:
 
 
     if st.button("Next"):
-        edited_df_no_index = edited_df.drop(columns=["index"])
+        if "index" in edited_df.columns:
+            edited_df_no_index = edited_df.drop(columns=["index"])
+        else:
+            edited_df_no_index = edited_df.copy()
+
+        # edited_df_no_index = edited_df.drop(columns=["index"])
         edited_json = edited_df_no_index.to_dict(orient='list')
         md = json_to_markdown_table(edited_json)
 
@@ -286,7 +414,12 @@ with col2:
     
 
     if st.button("Skip"):
-        edited_df_no_index = edited_df.drop(columns=["index"])
+        if "index" in edited_df.columns:
+            edited_df_no_index = edited_df.drop(columns=["index"])
+        else:
+            edited_df_no_index = edited_df.copy()
+
+        # edited_df_no_index = edited_df.drop(columns=["index"])
         edited_json = edited_df_no_index.to_dict(orient='list')
         md = json_to_markdown_table(edited_json)
 
