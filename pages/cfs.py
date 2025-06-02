@@ -3,6 +3,8 @@
 import streamlit as st
 import json
 import pandas as pd
+import numpy as np
+import pickle
 from tabulate import tabulate  # Ensure tabulate is installed: pip install tabulate
 from io import StringIO
 from collections import defaultdict
@@ -16,6 +18,9 @@ from PIL import Image, ImageDraw
 import math
 from io import BytesIO
 import base64
+import streamlit as st
+from io import BytesIO
+from PIL import Image, UnidentifiedImageError
 
 # st.set_page_config(layout="wide")  # Ensures the app uses the full width of the page
 
@@ -238,48 +243,65 @@ col1, col2 = st.columns(2)
 with col1:
     st.write("### Cashflow Sheet")
 
-    bg_image = Image.open(files[2])
+    def json2im(data) -> np.ndarray:
+        """Convert a dict (or JSON string) back to a Numpy array"""
+        if isinstance(data, str):
+            data = json.loads(data)  # convert JSON string to dict
+        imdata = base64.b64decode(data['image'])
+        im = pickle.loads(imdata)
+        return im
 
-    canvas_result = st_canvas(
-        fill_color="rgba(255, 165, 0, 0.3)",
-        stroke_width=2,
-        background_image=bg_image,
-        height=bg_image.height,
-        width=bg_image.width,
-        drawing_mode="rect",
-        key="canvas",
-    )
+    img = json2im(input_data["cfs"]["image_base64"])
 
-    def get_bbox_center(bbox):
-        points = list(zip(bbox[::2], bbox[1::2]))
-        x_coords = [pt[0] for pt in points]
-        y_coords = [pt[1] for pt in points]
-        return (sum(x_coords) / len(x_coords), sum(y_coords) / len(y_coords))
+    type(img)  # Should be <class 'numpy.ndarray'>
 
-    # Initialize clicked text in session state
-    if "clicked_text" not in st.session_state:
-        st.session_state.clicked_text = ""
+    # Display the image using PIL
+    bg_image = Image.fromarray(img)
 
-    if canvas_result.json_data is not None:
-        objects = canvas_result.json_data.get("objects", [])
-        if objects:
-            x_click = objects[-1]["left"]
-            y_click = objects[-1]["top"]
+    if bg_image:
+        canvas_result = st_canvas(
+            fill_color="rgba(255, 165, 0, 0.3)",
+            stroke_width=2,
+            background_image=bg_image,
+            height=bg_image.height,
+            width=bg_image.width,
+            drawing_mode="rect",
+            key="canvas_cashflow",
+        )
 
-            min_dist = float("inf")
-            closest_index = -1
+        def get_bbox_center(bbox):
+            points = list(zip(bbox[::2], bbox[1::2]))
+            x_coords = [pt[0] for pt in points]
+            y_coords = [pt[1] for pt in points]
+            return (sum(x_coords) / len(x_coords), sum(y_coords) / len(y_coords))
 
-            for i, bbox in enumerate(bounding_boxes):
-                cx, cy = get_bbox_center(bbox)
-                dist = math.hypot(cx - x_click, cy - y_click)
-                if dist < min_dist:
-                    min_dist = dist
-                    closest_index = i
+        # Initialize clicked text in session state
+        if "clicked_text" not in st.session_state:
+            st.session_state.clicked_text = ""
 
-            if closest_index != -1:
-                st.session_state.clicked_text = texts[closest_index]
-                st.success(f"Closest text: {st.session_state.clicked_text}")
-                st.write(f"Clicked at: ({round(x_click)}, {round(y_click)})")
+        if canvas_result.json_data is not None:
+            objects = canvas_result.json_data.get("objects", [])
+            if objects:
+                x_click = objects[-1]["left"]
+                y_click = objects[-1]["top"]
+
+                min_dist = float("inf")
+                closest_index = -1
+
+                for i, bbox in enumerate(bounding_boxes):
+                    cx, cy = get_bbox_center(bbox)
+                    dist = math.hypot(cx - x_click, cy - y_click)
+                    if dist < min_dist:
+                        min_dist = dist
+                        closest_index = i
+
+                if closest_index != -1:
+                    st.session_state.clicked_text = texts[closest_index]
+                    st.success(f"Closest text: {st.session_state.clicked_text}")
+                    st.write(f"Clicked at: ({round(x_click)}, {round(y_click)})")
+    else:
+        st.warning("Canvas not displayed due to image loading failure.")
+
 
 with col2:
     st.write("### Edit Financial Data")
@@ -470,4 +492,7 @@ with col2:
             intermediate_values = main_program.intermediate_values(merged_json)
             st.session_state.intermediate = intermediate_values
             
+            st.switch_page("pages/formula.py")
+
+        if st.button("Skip"):
             st.switch_page("pages/formula.py")
