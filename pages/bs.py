@@ -4,11 +4,17 @@ import streamlit as st
 import pandas as pd
 import requests
 import json
+import io
+import pickle
+import numpy as np
 from streamlit_drawable_canvas import st_canvas
 from PIL import Image, ImageDraw
 import math
 from io import BytesIO
 import base64
+import streamlit as st
+from io import BytesIO
+from PIL import Image, UnidentifiedImageError
 
 # st.set_page_config(layout="wide")
 st.markdown("""
@@ -245,7 +251,20 @@ col1, col2 = st.columns(2)
 with col1:
     st.write("### Balance Sheet")
 
-    bg_image = Image.open(files[0])
+    def json2im(data) -> np.ndarray:
+        """Convert a dict (or JSON string) back to a Numpy array"""
+        if isinstance(data, str):
+            data = json.loads(data)  # convert JSON string to dict
+        imdata = base64.b64decode(data['image'])
+        im = pickle.loads(imdata)
+        return im
+
+    img = json2im(input_data["bs"]["image_base64"])
+
+    # type(img)  # Should be <class 'numpy.ndarray'>
+
+    # Display the image using PIL
+    bg_image = Image.fromarray(img)
 
     canvas_result = st_canvas(
         fill_color="rgba(255, 165, 0, 0.3)",
@@ -285,8 +304,14 @@ with col1:
 
             if closest_index != -1:
                 st.session_state.clicked_text = texts[closest_index]
+                matched_bbox = bounding_boxes[closest_index]
+
+                # Show index, text, bbox, and click coordinates
                 st.success(f"Closest text: {st.session_state.clicked_text}")
+                st.write(f"Matched BBox Index: {closest_index}")
+                st.write(f"Matched BBox: {matched_bbox}")
                 st.write(f"Clicked at: ({round(x_click)}, {round(y_click)})")
+
 
 with col2:
     st.write("### Edit Financial Data")
@@ -414,18 +439,18 @@ with col2:
     
 
     if st.button("Skip"):
-        if "index" in edited_df.columns:
-            edited_df_no_index = edited_df.drop(columns=["index"])
-        else:
-            edited_df_no_index = edited_df.copy()
+        # if "index" in edited_df.columns:
+        #     edited_df_no_index = edited_df.drop(columns=["index"])
+        # else:
+        #     edited_df_no_index = edited_df.copy()
 
-        # edited_df_no_index = edited_df.drop(columns=["index"])
-        edited_json = edited_df_no_index.to_dict(orient='list')
-        md = json_to_markdown_table(edited_json)
+        # # edited_df_no_index = edited_df.drop(columns=["index"])
+        # edited_json = edited_df_no_index.to_dict(orient='list')
+        # md = json_to_markdown_table(edited_json)
 
-        input_data['bs']['raw_response']['natural_text'] = md
-        st.session_state.bs_df = edited_df_no_index
-        st.session_state.bs = edited_json
+        # input_data['bs']['raw_response']['natural_text'] = md
+        # st.session_state.bs_df = edited_df_no_index
+        # st.session_state.bs = edited_json
         st.success("Changes saved successfully as JSON!")
         st.switch_page("pages/is.py")
 

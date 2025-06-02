@@ -2,6 +2,8 @@
 # def app():
 import streamlit as st
 import pandas as pd
+import numpy as np
+import pickle
 import requests
 import json
 from streamlit_drawable_canvas import st_canvas
@@ -9,6 +11,9 @@ from PIL import Image, ImageDraw
 import math
 from io import BytesIO
 import base64
+import streamlit as st
+from io import BytesIO
+from PIL import Image, UnidentifiedImageError
 
 # st.set_page_config(layout="wide")
 st.markdown("""
@@ -246,48 +251,67 @@ col1, col2 = st.columns(2)
 with col1:
     st.write("### Income Sheet")
 
-    bg_image = Image.open(files[1])
+    def json2im(data) -> np.ndarray:
+        """Convert a dict (or JSON string) back to a Numpy array"""
+        if isinstance(data, str):
+            data = json.loads(data)  # convert JSON string to dict
+        imdata = base64.b64decode(data['image'])
+        im = pickle.loads(imdata)
+        return im
 
-    canvas_result = st_canvas(
-        fill_color="rgba(255, 165, 0, 0.3)",
-        stroke_width=2,
-        background_image=bg_image,
-        height=bg_image.height,
-        width=bg_image.width,
-        drawing_mode="rect",
-        key="canvas",
-    )
+    img = json2im(input_data["is"]["image_base64"])
 
-    def get_bbox_center(bbox):
-        points = list(zip(bbox[::2], bbox[1::2]))
-        x_coords = [pt[0] for pt in points]
-        y_coords = [pt[1] for pt in points]
-        return (sum(x_coords) / len(x_coords), sum(y_coords) / len(y_coords))
+    type(img)  # Should be <class 'numpy.ndarray'>
 
-    # Initialize clicked text in session state
-    if "clicked_text" not in st.session_state:
-        st.session_state.clicked_text = ""
+    # Display the image using PIL
+    bg_image = Image.fromarray(img)
 
-    if canvas_result.json_data is not None:
-        objects = canvas_result.json_data.get("objects", [])
-        if objects:
-            x_click = objects[-1]["left"]
-            y_click = objects[-1]["top"]
+    if bg_image:
+        # Draw on canvas if image is valid
+        canvas_result = st_canvas(
+            fill_color="rgba(255, 165, 0, 0.3)",
+            stroke_width=2,
+            background_image=bg_image,
+            height=bg_image.height,
+            width=bg_image.width,
+            drawing_mode="rect",
+            key="canvas_income",
+        )
 
-            min_dist = float("inf")
-            closest_index = -1
+        def get_bbox_center(bbox):
+            points = list(zip(bbox[::2], bbox[1::2]))
+            x_coords = [pt[0] for pt in points]
+            y_coords = [pt[1] for pt in points]
+            return (sum(x_coords) / len(x_coords), sum(y_coords) / len(y_coords))
 
-            for i, bbox in enumerate(bounding_boxes):
-                cx, cy = get_bbox_center(bbox)
-                dist = math.hypot(cx - x_click, cy - y_click)
-                if dist < min_dist:
-                    min_dist = dist
-                    closest_index = i
+        # Initialize clicked text in session state
+        if "clicked_text" not in st.session_state:
+            st.session_state.clicked_text = ""
 
-            if closest_index != -1:
-                st.session_state.clicked_text = texts[closest_index]
-                st.success(f"Closest text: {st.session_state.clicked_text}")
-                st.write(f"Clicked at: ({round(x_click)}, {round(y_click)})")
+        if canvas_result.json_data is not None:
+            objects = canvas_result.json_data.get("objects", [])
+            if objects:
+                x_click = objects[-1]["left"]
+                y_click = objects[-1]["top"]
+
+                min_dist = float("inf")
+                closest_index = -1
+
+                for i, bbox in enumerate(bounding_boxes):
+                    cx, cy = get_bbox_center(bbox)
+                    dist = math.hypot(cx - x_click, cy - y_click)
+                    if dist < min_dist:
+                        min_dist = dist
+                        closest_index = i
+
+                if closest_index != -1:
+                    st.session_state.clicked_text = texts[closest_index]
+                    st.success(f"Closest text: {st.session_state.clicked_text}")
+                    st.write(f"Clicked at: ({round(x_click)}, {round(y_click)})")
+    else:
+        st.warning("Canvas not displayed due to image loading failure.")
+
+
 
 with col2:
     st.write("### Edit Financial Data")
@@ -379,16 +403,16 @@ with col2:
 
 
     if st.button("Skip"):
-        if "index" in edited_df.columns:
-            edited_df_no_index = edited_df.drop(columns=["index"])
-        else:
-            edited_df_no_index = edited_df.copy()
-        # final_df = edited_df.drop(columns=["index"])
-        final_json = edited_df_no_index.to_dict(orient='list')
-        markdown = json_to_markdown_table(final_json)
+        # if "index" in edited_df.columns:
+        #     edited_df_no_index = edited_df.drop(columns=["index"])
+        # else:
+        #     edited_df_no_index = edited_df.copy()
+        # # final_df = edited_df.drop(columns=["index"])
+        # final_json = edited_df_no_index.to_dict(orient='list')
+        # markdown = json_to_markdown_table(final_json)
 
-        input_data['is']['raw_response']['natural_text'] = markdown
-        st.session_state.is_df = edited_df_no_index
-        st.session_state.pls = final_json
+        # input_data['is']['raw_response']['natural_text'] = markdown
+        # st.session_state.is_df = edited_df_no_index
+        # st.session_state.pls = final_json
         st.success("Changes saved successfully as JSON!")
         st.switch_page("pages/cfs.py")
