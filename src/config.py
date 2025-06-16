@@ -141,3 +141,23 @@ list_of_particulars = bs = [
 model_path = "/workspace/hugging_face_model/olmOCR-7B-0225-preview"
 processor_path = "/workspace/hugging_face_model/Qwen2-VL-7B-Instruct"
 pdf_path = "/workspace/CreditScoring-refined-/pdf"
+
+
+method = 'normal'
+
+
+"""Tune this to remove overlapping or duplicate lines.
+
+- Too low: may keep duplicate lines
+
+- Too high: may suppress true lines"""
+horiz_iou_thresh = 0.5
+vert_iou_thresh = 0.1
+"""Controls the minimum distance between clusters of lines.
+Good values: 3–15 (depending on resolution and OCR accuracy)"""
+horiz_eps = 5
+vert_eps = 5
+
+# Helps reduce repeated or noisy columns/rows.
+horiz_min_gap =90
+vert_min_gap =90
