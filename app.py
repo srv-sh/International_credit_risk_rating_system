@@ -3,10 +3,14 @@ from pydantic import BaseModel
 from typing import List
 from PIL import Image
 import io
-from src.GetDataFromTable import getTableFromImage
+# from src.GetDataFromTable import getTableFromImage
+from src.GetDataFromTablePaddle import getData
+from src.utils.ImageJsonUtils import imageUtils
 import psycopg2
 from psycopg2 import sql
 from typing import Optional
+import json
+
 
 app = FastAPI(
     title="Credit Scoring System API",
@@ -111,7 +115,7 @@ class Main:
     """Main class to handle data extraction and database interactions."""
     
     def __init__(self):
-        self.data_extraction_cls = getTableFromImage()
+        self.data_extraction_cls = getData()
         self.DB_CONFIG = {
             "dbname": "credit_scoring",
             "user": "sourav",  # Change this to your DB username
@@ -119,6 +123,7 @@ class Main:
             "host": "192.168.10.50",  # Change if using a remote server
             "port": 5432  # Default PostgreSQL port
         }
+        self.utils = imageUtils()
 
     def get_db_connection(self):
         """Establish a database connection."""
@@ -127,32 +132,66 @@ class Main:
     def get_data(self, image_content):
         """Extract table data from the image."""
         image = Image.open(io.BytesIO(image_content)).convert("RGB")
-        particular , year1 , year2 , columns , url , prompt , data = self.data_extraction_cls.get_table_data(image)
-        return particular , year1 , year2 , columns , url , prompt , data
+        data =self.data_extraction_cls.get_stucture_data(image)
+        # particular , year1 , year2 , columns , url , prompt , data = self.data_extraction_cls.get_table_data(image)
+        return data
 
 
 main_cls = Main()
 assign_file_name = {0: "bs", 1: "is", 2: "cfs"}
 
 
-@app.post("/uploadfiles/", summary="Upload Financial Files", description="Uploads 3 financial documents (Balance Sheet, Income Statement, and Cash Flow Statement) for processing and data extraction.")
+from fastapi import UploadFile, HTTPException
+from fastapi.responses import JSONResponse
+from typing import List
+import json
+
+@app.post("/uploadfiles/")
 async def upload_files(files: List[UploadFile]):
-    """
-    Uploads exactly 3 files for OCR processing and returns the extracted data.
-    - **files**: List of file objects (3 files are required)
-    """
     if len(files) != 3:
         raise HTTPException(status_code=400, detail="You must upload exactly 3 files")
     
     final_response = {}
+
     for idx, file in enumerate(files):
         content = await file.read()
-        particular, year1, year2, columns, url, prompt, data = main_cls.get_data(content)
+        data = main_cls.get_data(content)
+
+        try:
+            df_json = json.loads(data['correct_markdown'].to_json(orient="records"))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error serializing dataframe: {e}")
+
+        # Save image from base64 and return path
+        image_dict = data['image']
+        image_base64_str = image_dict.get("image")
+        try:
+            image_path = main_cls.utils.save_encoded_image(image_base64_str)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error saving image: {e}")
+
+        # Ensure bbox and text are JSON serializable
+        bbox = data.get("bbox", [])
+        if not isinstance(bbox, list):
+            bbox = bbox.tolist()  # convert NumPy array to list
+
+        text = data.get("text")
+        if not isinstance(text, list):
+            text = []
+
         doc_type = assign_file_name[idx]
-        dist = {"particulars": particular, columns[0]: year1, columns[1]: year2}
-        final_response[doc_type] = {"processed_response": dist, "pdf_url": url, "prompt": prompt, "raw_response": data}
-    
-    return final_response
+
+        final_response[doc_type] = {
+            "processed_response": df_json,
+            "image_base64": image_dict,
+            "paddleOCR": {
+                "text": text,
+                "bbox": bbox
+            }
+        }
+
+    return JSONResponse(content=final_response)
+
 
 
 @app.post("/store_ocr_data/", summary="Store OCR Data", description="Store OCR data into the database.")
