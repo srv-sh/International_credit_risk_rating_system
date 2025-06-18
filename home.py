@@ -10,6 +10,8 @@ import os
 import torch
 from streamlit_option_menu import option_menu
 import importlib
+import json
+
 
 st.set_page_config(
     layout="wide",
@@ -81,11 +83,15 @@ if files and submit:
     if all(files) and name and address and phone and email:
         main_program = Main()
 
-        input_data = main_program.hit_fastapi(files)
+        # input_data = main_program.hit_fastapi(files)
+
+        # Load JSON file into a variable
+        with open('response_1750229417480.json', 'r', encoding='utf-8') as file:
+            input_data = json.load(file)
 
         if input_data:
             st.session_state.input = input_data
-            switch_page("bs")
+            switch_page("test")
             # page = importlib.import_module("pages.bs")
             # page.app()
 

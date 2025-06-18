@@ -1,19 +1,21 @@
 
 # def app():
-import streamlit as st
-import pandas as pd
-import numpy as np
+# Standard Library Imports
+import base64
+import io
+import math
 import pickle
+from io import BytesIO
+
+# Third-Party Library Imports
+import numpy as np
+import pandas as pd
 import requests
 import json
-from streamlit_drawable_canvas import st_canvas
-from PIL import Image, ImageDraw
-import math
-from io import BytesIO
-import base64
 import streamlit as st
-from io import BytesIO
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageDraw, UnidentifiedImageError
+from streamlit_drawable_canvas import st_canvas
+
 
 # st.set_page_config(layout="wide")
 st.markdown("""
@@ -77,7 +79,7 @@ def display_editable_dataframe(data):
         if "Particulars" in df.columns:
             cols = df.columns.tolist()
             cols.remove("Particulars")
-            df = df[["Particulars"] + sorted(cols)]
+            df = df[["Particulars"] + cols]
         return df
     return None
 
@@ -93,10 +95,10 @@ def json_to_markdown_table(json_data):
 
 def transform_and_send(data: dict, database_url: str):
     transformed_data = {
-        "url": data['is']['pdf_url'],
-        "prompt": data['is']['prompt'],
+        "image_base64": data['is']['image_base64'],
+        "raw_response": data['is']['raw_response'],
         "page_number": 1,
-        "response": json.dumps(data['is']['raw_response'])
+        "response": markdown
     }
     try:
         response = requests.post(database_url, json=transformed_data)
@@ -253,15 +255,13 @@ with col1:
 
     def json2im(data) -> np.ndarray:
         """Convert a dict (or JSON string) back to a Numpy array"""
-        if isinstance(data, str):
-            data = json.loads(data)  # convert JSON string to dict
-        imdata = base64.b64decode(data['image'])
+        # if isinstance(data, str):
+        #     data = json.loads(data)  # convert JSON string to dict
+        imdata = base64.b64decode(data)
         im = pickle.loads(imdata)
         return im
 
     img = json2im(input_data["is"]["image_base64"])
-
-    type(img)  # Should be <class 'numpy.ndarray'>
 
     # Display the image using PIL
     bg_image = Image.fromarray(img)
@@ -310,6 +310,7 @@ with col1:
                     st.write(f"Clicked at: ({round(x_click)}, {round(y_click)})")
     else:
         st.warning("Canvas not displayed due to image loading failure.")
+
 
 
 
@@ -385,7 +386,7 @@ with col2:
         final_json = edited_df_no_index.to_dict(orient='list')
         markdown = json_to_markdown_table(final_json)
 
-        input_data['is']['raw_response']['natural_text'] = markdown
+        # input_data['is']['raw_response']['natural_text'] = markdown
         st.session_state.is_df = edited_df_no_index
         st.session_state.pls = final_json
 

@@ -83,7 +83,7 @@ def display_editable_dataframe(data):
         columns = cfs_df.columns.tolist()
         if "Particulars" in columns:
             columns.remove("Particulars")
-            cfs_df = cfs_df[["Particulars"] + sorted(columns)]
+            cfs_df = cfs_df[["Particulars"] + columns]
 
         return cfs_df
     else:
@@ -245,15 +245,15 @@ with col1:
 
     def json2im(data) -> np.ndarray:
         """Convert a dict (or JSON string) back to a Numpy array"""
-        if isinstance(data, str):
-            data = json.loads(data)  # convert JSON string to dict
-        imdata = base64.b64decode(data['image'])
+        # if isinstance(data, str):
+        #     data = json.loads(data)  # convert JSON string to dict
+        imdata = base64.b64decode(data)
         im = pickle.loads(imdata)
         return im
 
     img = json2im(input_data["cfs"]["image_base64"])
 
-    type(img)  # Should be <class 'numpy.ndarray'>
+    # type(img)  # Should be <class 'numpy.ndarray'>
 
     # Display the image using PIL
     bg_image = Image.fromarray(img)
@@ -378,8 +378,6 @@ with col2:
             # Convert to JSON without the index
             edited_json = edited_df_no_index.to_dict(orient='list')
             md = json_to_markdown_table(edited_json)
-
-            input_data['cfs']['raw_response']['natural_text'] = md
             st.session_state.cfs_df = edited_df_no_index
             st.session_state.cfs = edited_json
             st.success("Changes saved successfully as JSON!")
@@ -387,10 +385,10 @@ with col2:
             def transform_and_send(data: dict, database_url: str):
                 # Transforming data
                 transformed_data = {
-                    "url": data['cfs']['pdf_url'],       
-                    "prompt": data['cfs']['prompt'],     
+                    "image_base64": data['cfs']['image_base64'],  # Base64 encoded image  
+                    "raw_response": data['cfs']['raw_response'],  # Raw OCR response
                     "page_number": 1,                   
-                    "response": json.dumps(data['cfs']['raw_response'])  # Serialize the raw response as a JSON string
+                    "response": md  # Serialize the raw response as a JSON string
                 }
 
                 # Log the transformed data to verify it's correct
