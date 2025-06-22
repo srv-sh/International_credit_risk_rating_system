@@ -11,6 +11,7 @@ import torch
 from streamlit_option_menu import option_menu
 import importlib
 import json
+import time
 
 
 st.set_page_config(
@@ -79,36 +80,21 @@ st.session_state.files = files
 
 submit = st.button("Next")
 
+
 if files and submit:
     if all(files) and name and address and phone and email:
         main_program = Main()
 
-        # input_data = main_program.hit_fastapi(files)
-
-        # Load JSON file into a variable
-        with open('response_1750229417480.json', 'r', encoding='utf-8') as file:
-            input_data = json.load(file)
+        # Show spinner while processing
+        with st.spinner("Processing files. Please wait..."):
+            input_data = main_program.hit_fastapi(files)
 
         if input_data:
+            st.success("Processing complete!")
             st.session_state.input = input_data
+            time.sleep(1)  # brief pause for UX
             switch_page("test")
-            # page = importlib.import_module("pages.bs")
-            # page.app()
-
-
-            # intermediate_values = main_program.intermediate_values(input_data)
-            # print(intermediate_values)
-
-            # inter_result = main_program.intermediate_result(input_data, intermediate_values)
-
-            # output = main_program.final_output(inter_result)
-
-            # st.session_state.output = output
-
-            # print("Output:")
-            # print(output)
-
-            # switch_page("display")
-
+        else:
+            st.error("Failed to retrieve data from API. Please try again.")
     else:
         st.warning("Please upload all files and fill in all required details.")

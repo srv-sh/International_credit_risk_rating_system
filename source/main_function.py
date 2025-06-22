@@ -31,8 +31,8 @@ class Main:
                 response = requests.post(url, files=files_to_upload)
                 response.raise_for_status()  # Raise error for HTTP codes 4xx/5xx
 
-                print("Response JSON:")
-                print(response.json())
+                # print("Response JSON:")
+                # print(response.json())
                 return response.json()  # Return the JSON response directly
 
             except requests.exceptions.RequestException as e:
