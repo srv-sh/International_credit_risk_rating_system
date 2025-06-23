@@ -164,11 +164,9 @@ def pages(sheet):
                 new_height = bg_image.height
 
             # Ensure unique canvas key with timestamp or counter
-            canvas_key = f"canvas_{sheet}_{int(time.time() * 1000) % 10000}"
-
-            # Store canvas key in session state to maintain consistency
             canvas_key_state = f"canvas_key_{sheet}"
             if canvas_key_state not in st.session_state:
+                canvas_key = f"canvas_{sheet}_{int(time.time() * 1000) % 10000}"
                 st.session_state[canvas_key_state] = canvas_key
             else:
                 canvas_key = st.session_state[canvas_key_state]
