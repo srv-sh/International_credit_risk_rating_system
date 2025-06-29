@@ -10,6 +10,7 @@ import psycopg2
 from psycopg2 import sql
 from typing import Optional
 import json
+import re
 
 
 app = FastAPI(
@@ -23,8 +24,8 @@ app = FastAPI(
 # pydantic models
 class OCRData(BaseModel):
     """Model for OCR data extraction from uploaded files."""
-    url: str = "http://example.com"  # Example URL for reference
-    prompt: str = "Extract data from the provided table"
+    image_base64: str = "image base64"  # Example URL for reference
+    raw_response: str = "Extract data from the provided table"
     page_number: int = 1
     response: str = "OCR result as JSON"
 
@@ -117,9 +118,9 @@ class Main:
     def __init__(self):
         self.data_extraction_cls = getData()
         self.DB_CONFIG = {
-            "dbname": "credit_scoring",
-            "user": "sourav",  # Change this to your DB username
-            "password": "sourav@59",  # Change this to your DB password
+            "dbname": "table_data",
+            "user": "postgres",  # Change this to your DB username
+            "password": "postgresP",  # Change this to your DB password
             "host": "192.168.10.50",  # Change if using a remote server
             "port": 5432  # Default PostgreSQL port
         }
@@ -135,6 +136,9 @@ class Main:
         data =self.data_extraction_cls.get_stucture_data(image)
         # particular , year1 , year2 , columns , url , prompt , data = self.data_extraction_cls.get_table_data(image)
         return data
+    def is_garbage_row(self,row):
+        return all(re.fullmatch(r"[:\-\s]*", str(v)) for v in row.values())
+    
 
 
 main_cls = Main()
@@ -159,6 +163,8 @@ async def upload_files(files: List[UploadFile]):
 
         try:
             df_json = json.loads(data['correct_markdown'].to_json(orient="records"))
+            df_json = [row for row in df_json if not main_cls.is_garbage_row(row)]
+
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error serializing dataframe: {e}")
 
@@ -182,8 +188,9 @@ async def upload_files(files: List[UploadFile]):
         doc_type = assign_file_name[idx]
 
         final_response[doc_type] = {
+            "raw_response" : data["incorrect_markdown"], 
             "processed_response": df_json,
-            "image_base64": image_dict,
+            "image_base64": image_base64_str,
             "paddleOCR": {
                 "text": text,
                 "bbox": bbox
@@ -204,11 +211,11 @@ async def store_ocr_data(data: OCRData):
     cur = conn.cursor()
     try:
         query = """
-        INSERT INTO ocr_data (url, prompt, page_number, response)
+        INSERT INTO ocr_data (image_base64 ,raw_response, page_number, response)
         VALUES (%s, %s, %s , %s)
         RETURNING id
         """
-        cur.execute(query, (data.url, data.prompt, data.page_number, data.response))
+        cur.execute(query, (data.image_base64, data.raw_response, data.page_number, data.response))
         inserted_id = cur.fetchone()[0]
         conn.commit()
         return {"message": "Data inserted successfully", "id": inserted_id}
