@@ -8,12 +8,6 @@ from source.calculation import FinancialCalculator
 # from Responses import main
 
 class Main:
-    # def __init__(self):
-    #     self.main_class = main()
-    # def hit_fastapi(self, files):
-    #     responses =  self.main_class.get_response(files=files)
-    #     print(responses)
-    #     return responses
 
     def hit_fastapi(self, files):
         url = "http://192.168.10.50:8000/uploadfiles"

@@ -4,7 +4,7 @@ import pandas as pd
 # from streamlit_extras.switch_page_button import switch_page
 
 # Load JSON Data
-json_file = "indicators.json"  # Replace with your actual JSON file
+json_file = "json/indicators.json"  # Replace with your actual JSON file
 with open(json_file, "r") as file:
     data = json.load(file)
 
