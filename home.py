@@ -57,8 +57,8 @@ st.markdown("## Image Files Upload")
 def get_images():
     # Upload images
     balance_sheet_img = st.file_uploader("Please Upload the Balance Sheet Image", type=["png", "jpg", "jpeg"], key="img1")
-    cash_flow_sheet_img = st.file_uploader("Please Upload the Cash Flow Sheet Image", type=["png", "jpg", "jpeg"], key="img2")
     profit_loss_sheet_img = st.file_uploader("Please Upload the Profit-Loss Sheet Image", type=["png", "jpg", "jpeg"], key="img3")
+    cash_flow_sheet_img = st.file_uploader("Please Upload the Cash Flow Sheet Image", type=["png", "jpg", "jpeg"], key="img2")
 
     return balance_sheet_img, cash_flow_sheet_img, profit_loss_sheet_img
 
