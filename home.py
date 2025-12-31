@@ -89,10 +89,13 @@ if files and submit:
         with st.spinner("Processing files. Please wait..."):
             input_data = main_program.hit_fastapi(files)
 
+        print(input_data)
+
         if input_data:
             st.success("Processing complete!")
             st.session_state.input = input_data
             time.sleep(1)  # brief pause for UX
+            # switch_page("bs")
             switch_page("all_data")
         else:
             st.error("Failed to retrieve data from API. Please try again.")
