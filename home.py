@@ -95,8 +95,8 @@ if files and submit:
             st.success("Processing complete!")
             st.session_state.input = input_data
             time.sleep(1)  # brief pause for UX
-            # switch_page("bs")
-            switch_page("all_data")
+            switch_page("bs")
+            # switch_page("all_data")
         else:
             st.error("Failed to retrieve data from API. Please try again.")
     else:
