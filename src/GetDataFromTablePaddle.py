@@ -2,10 +2,10 @@ from .GetTableFromImage import getTableOnly
 from .GetOCRFromPaddle import getOCR
 from .GetTableStucture import getStucture
 from .GetResponseFromLLM import GetResponseFromOpenAI
-from . import config as cfg
+from .  import config as cfg
 import numpy as np
 import pandas as pd
-from .allinone import allinone
+# from allinone import allinone
 
 
 class getData():
@@ -100,24 +100,28 @@ class getData():
 
         # self.structure_recognisation = getStucture()
 
-    def get_stucture_data(self, image_path):
-        cropped_table = self.table_detection_class.detect(image_path)
+    def get_stucture_data(self, image_path, base_64 = True):
+        cropped_table = self.table_detection_class.detect(image_path, base_64)
         ocr_info = self.ocr_model.predict(cropped_image=cropped_table)
         self.structure_recognisation = getStucture(ocr_information=ocr_info)
         all_info = self.structure_recognisation.boxes_from_image(method=cfg.method)
         
         # markdown = allinone(all_info)
-        markdown =  self.convert_to_markdown(all_info, method= cfg.method)
-        # print(markdown)
+        incorrect_markdown =  self.convert_to_markdown(all_info, method= cfg.method)
+        print(incorrect_markdown)
         # correct_markdown
-        correct_markdown = self.llm_model.get_response(markdown )
+
+        correct_markdown = self.llm_model.get_response(incorrect_markdown)
+        # correct_markdown = correct_markdown[~correct_markdown.apply(lambda row: row.astype(str).str.match(r'^-+$')).any(axis=1)]
         print(correct_markdown)
         text = ocr_info['texts']
         bbox = ocr_info['boxes']
         
         image = ocr_info['cropped_image']
 
-        return {"correct_markdown":  correct_markdown, 
+        return {
+                "incorrect_markdown" : incorrect_markdown,
+                "correct_markdown":  correct_markdown, 
                 "image":image,
                 "text": text,
                 "bbox" : bbox }
@@ -128,7 +132,7 @@ class getData():
 
 if __name__ == "__main__":
     get_data_cls = getData()
-    get_data_cls.get_stucture_data("/home/sourav/workspace/table_recognisation_model/data/idlc/Basu1.png")
+    get_data_cls.get_stucture_data("/home/sourav/workspace/CreditScoring-refined-/data/tables/bashundhara3.png", base_64 = False)
 
 
 

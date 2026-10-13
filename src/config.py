@@ -151,8 +151,8 @@ method = 'normal'
 - Too low: may keep duplicate lines
 
 - Too high: may suppress true lines"""
-horiz_iou_thresh = 0.5
-vert_iou_thresh = 0.1
+horiz_iou_thresh = 0.50
+vert_iou_thresh = 0.10
 """Controls the minimum distance between clusters of lines.
 Good values: 3–15 (depending on resolution and OCR accuracy)"""
 horiz_eps = 5

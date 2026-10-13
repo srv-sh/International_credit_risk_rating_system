@@ -8,10 +8,12 @@ class getTableOnly():
         self.checkpoint_path = '/home/sourav/workspace/CreditScoring-refined-/data/best.pt'
         self.model = YOLO(self.checkpoint_path)
     
-    def detect(self, image, save=False):
+    def detect(self, image,base_64 = True ,  save=False):
         # Convert PIL image to OpenCV image (numpy array)
-        image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-
+        if base_64:
+            image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        else:
+            image = cv2.imread(image)
         results = self.model(image)[0]
         for i, box in enumerate(results.boxes):
             class_id = int(box.cls[0])
