@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List
 from PIL import Image
 import io
+import os
 # from src.GetDataFromTable import getTableFromImage
 from src.GetDataFromTablePaddle import getData
 from src.utils.ImageJsonUtils import imageUtils
@@ -118,11 +119,11 @@ class Main:
     def __init__(self):
         self.data_extraction_cls = getData()
         self.DB_CONFIG = {
-            "dbname": "table_data",
-            "user": "postgres",  # Change this to your DB username
-            "password": "postgresP",  # Change this to your DB password
-            "host": "192.168.10.50",  # Change if using a remote server
-            "port": 5432  # Default PostgreSQL port
+            "dbname": os.getenv("DB_NAME", "table_data"),
+            "user": os.getenv("DB_USER", "postgres"),
+            "password": os.environ["DB_PASSWORD"],
+            "host": os.getenv("DB_HOST", "192.168.10.50"),
+            "port": int(os.getenv("DB_PORT", "5432"))
         }
         self.utils = imageUtils()
 

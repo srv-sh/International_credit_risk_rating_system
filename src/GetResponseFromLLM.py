@@ -1,3 +1,4 @@
+import os
 from openai import OpenAI
 import pandas as pd
 import re
@@ -6,8 +7,8 @@ import traceback
 
 class GetResponseFromOpenAI:
     def __init__(self):
-        # Initialize OpenAI client with your API key
-        self.client = OpenAI(api_key='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')  # Replace with your actual API key
+        # Initialize OpenAI client from the OPENAI_API_KEY environment variable
+        self.client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         self.model = "gpt-4-turbo"  # or "gpt-4-turbo" if needed
 
     def remove_markdown_separator(self, df: pd.DataFrame) -> pd.DataFrame:

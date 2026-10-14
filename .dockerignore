@@ -1,0 +1,15 @@
+.git
+.venv
+credit_env
+**/__pycache__
+**/*.pyc
+notebooks
+input
+saved_images
+cropped_image
+image
+train
+table_data
+runs
+!runs/detect/train3/weights/best.pt
+.env

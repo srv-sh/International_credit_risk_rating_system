@@ -12,3 +12,11 @@ result.json
 table_data/
 train/
 credit 
+.venv/
+input/
+
+# Environment files (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+*.env
