@@ -1,6 +1,7 @@
-credit
+.venv
 augmented_images
 images
 saved_images
 test2.py
 source/__pycache__
+input
