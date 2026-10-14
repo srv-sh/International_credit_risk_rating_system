@@ -10,10 +10,10 @@ import pandas as pd
 
 class getData():
 
-    def __init__(self):
+    def __init__(self, provider=None):
         self.table_detection_class = getTableOnly()
         self.ocr_model = getOCR()
-        self.llm_model = GetResponseFromOpenAI()
+        self.llm_model = GetResponseFromOpenAI(provider=provider)
         
 
     def intersection(self,box_1, box_2):
