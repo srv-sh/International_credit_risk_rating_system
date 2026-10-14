@@ -1,4 +1,5 @@
 import streamlit as st
+from source import api_client
 from source.main_function import Main
 import json
 import requests
@@ -206,7 +207,7 @@ def main():
             inter_result = main_program.intermediate_result(input_data, intermediate_data)
             output_data, output = main_program.final_output(inter_result)
 
-            url = "http://192.168.10.50:8000/store_scoring_data"
+            url = "store_scoring_data"
 
             print(output)
 
@@ -254,12 +255,7 @@ def main():
                 print(f"Sending transformed data: {transformed_data}")
 
                 # Sending transformed data to the database URL
-                try:
-                    response = requests.post(url, json=transformed_data)
-                    response.raise_for_status()
-                    return {'status': 'success', 'response': response.json()}
-                except requests.exceptions.RequestException as e:
-                    return {'status': 'error', 'error': str(e)}
+                return api_client.store(url, transformed_data)
                 
             
             final = store_scoring_data(output, url)

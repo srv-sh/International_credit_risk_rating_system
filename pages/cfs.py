@@ -1,6 +1,7 @@
     
 # def app():
 import streamlit as st
+from source import api_client
 import json
 import pandas as pd
 import numpy as np
@@ -128,6 +129,11 @@ else:
     files = st.session_state.files
 
 
+
+if "cfs" not in input_data:
+    # session input was replaced by the merged table after a previous submit
+    st.error("Cash flow data is no longer in this session. Go back to Home and click Next to reload it.")
+    st.stop()
 
 texts = input_data["cfs"]["paddleOCR"]["text"]
 bounding_boxes = input_data["cfs"]["paddleOCR"]["bbox"] 
@@ -385,6 +391,7 @@ with col2:
             def transform_and_send(data: dict, database_url: str):
                 # Transforming data
                 transformed_data = {
+                    "sheet": "cfs",
                     "image_base64": data['cfs']['image_base64'],  # Base64 encoded image  
                     "raw_response": data['cfs']['raw_response'],  # Raw OCR response
                     "page_number": 1,                   
@@ -395,18 +402,22 @@ with col2:
                 print(f"Sending transformed data: {json.dumps(transformed_data, indent=2)}")
 
                 # Sending transformed data to the database URL
-                try:
-                    response = requests.post(database_url, json=transformed_data)
-                    response.raise_for_status()
-                    return {'status': 'success', 'response': response.json()}
-                except requests.exceptions.RequestException as e:
-                    return {'status': 'error', 'error': str(e)}
+                return api_client.store(database_url, transformed_data)
 
             # Example URL
-            url = "http://192.168.10.50:8000/store_ocr_data"
+            url = "store_ocr_data"
 
             storedb = transform_and_send(input_data, url)
             print(f"THE DATABASE RESPONSE IS: {storedb}")
+
+            if storedb.get('status') != 'success' or 'response' not in storedb:
+                st.error(f"Database error: {storedb.get('error')}")
+                st.stop()
+
+            missing = [k for k in ('bs', 'pls', 'cfs') if k not in st.session_state]
+            if missing:
+                st.error(f"Missing data for: {', '.join(missing)}. Go back and complete those pages first.")
+                st.stop()
 
             # Step 1: Load the JSON file
             with open('json/variables.json', 'r') as file:
@@ -484,7 +495,7 @@ with col2:
             print("-------------------------------------------------------------------------")
             print(merged_json)
 
-            st.session_state.input = merged_json
+            st.session_state.merged_input = merged_json  # keep st.session_state.input (raw bs/cfs/is) intact for other pages
 
             main_program = Main()
             intermediate_values = main_program.intermediate_values(merged_json)

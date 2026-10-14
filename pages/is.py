@@ -13,6 +13,7 @@ import pandas as pd
 import requests
 import json
 import streamlit as st
+from source import api_client
 from PIL import Image, ImageDraw, UnidentifiedImageError
 from streamlit_drawable_canvas import st_canvas
 
@@ -95,17 +96,13 @@ def json_to_markdown_table(json_data):
 
 def transform_and_send(data: dict, database_url: str):
     transformed_data = {
+        "sheet": "is",
         "image_base64": data['is']['image_base64'],
         "raw_response": data['is']['raw_response'],
         "page_number": 1,
         "response": markdown
     }
-    try:
-        response = requests.post(database_url, json=transformed_data)
-        response.raise_for_status()
-        return {'status': 'success', 'response': response.json()}
-    except requests.exceptions.RequestException as e:
-        return {'status': 'error', 'error': str(e)}
+    return api_client.store(database_url, transformed_data)
 
 def update_json_file(key, value, filepath='json/variables.json'):
     with open(filepath, 'r') as file:
@@ -390,7 +387,7 @@ with col2:
         st.session_state.is_df = edited_df_no_index
         st.session_state.pls = final_json
 
-        db_response = transform_and_send(input_data, "http://192.168.10.50:8000/store_ocr_data")
+        db_response = transform_and_send(input_data, "store_ocr_data")
         if db_response['status'] == 'success':
             income_id = db_response['response']['id']
             update_json_file('income_id', income_id)

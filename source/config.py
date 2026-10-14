@@ -4,6 +4,9 @@ import requests
 import json
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
+from dotenv import load_dotenv
+
+load_dotenv()
 # from langchain_ollama import ChatOllama
 
 
@@ -11,9 +14,9 @@ class AgentCall:
     def __init__(self, markdown_output):
         # Initialize the OpenAI LLM
         self.llm = ChatOpenAI(
-            openai_api_base=os.environ.get("OPENAI_API_BASE_URL"),
+            openai_api_base=os.environ.get("OPENAI_API_BASE_URL") or None,
             openai_api_key=os.environ.get("OPENAI_API_KEY"),
-            model_name=os.environ.get("MODEL_NAME"),
+            model_name=os.environ.get("OPENAI_MODEL") or os.environ.get("MODEL_NAME") or "gpt-4o-mini",
             temperature=0.3
         )
 

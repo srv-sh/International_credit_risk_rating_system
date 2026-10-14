@@ -13,6 +13,7 @@ import pandas as pd
 import requests
 import json
 import streamlit as st
+from source import api_client
 from PIL import Image, ImageDraw, UnidentifiedImageError
 from streamlit_drawable_canvas import st_canvas
 
@@ -122,6 +123,7 @@ class DataFormationandStorage:
     
     def transform_and_send(self, data: dict, database_url: str):
             transformed_data = {
+                "sheet": "bs",
                 "image_base64": self.input.img_base64,
                 "raw_response": self.input.raw_response,
                 "page_number": 1,
@@ -133,14 +135,9 @@ class DataFormationandStorage:
             print("📤 Sending this to the DB:")
             print(json.dumps(transformed_data, indent=2))
 
-            try:
-                response = requests.post(database_url, json=transformed_data)
-                response.raise_for_status()
-                return {'status': 'success', 'response': response.json()}
-            except requests.exceptions.RequestException as e:
-                print("❌ Request failed:", str(e))
-                return {'status': 'error', 'error': str(e)}
+            return api_client.store(database_url, transformed_data)
             
+    @staticmethod
     def update_json_file(key, value, filepath='json/variables.json'):
         with open(filepath, 'r') as file:
             data = json.load(file)
@@ -370,7 +367,7 @@ with col2:
         st.success("Changes saved successfully as JSON!")
 
 
-        url = "http://192.168.10.50:8000/store_ocr_data"
+        url = "store_ocr_data"
         storedb = data_formation.transform_and_send(input_obj.input_data, url)
         print(f"📥 THE DATABASE RESPONSE IS: {storedb}")
 

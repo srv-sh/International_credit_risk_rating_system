@@ -1,4 +1,5 @@
 import streamlit as st
+from source import api_client
 import pandas as pd
 import requests
 import json
@@ -127,18 +128,13 @@ def transform_and_send(data, database_url):
             "response": json.dumps(doc_data.get('raw_response', {}))
         }
 
-        try:
-            response = requests.post(database_url, json=transformed_data)
-            response.raise_for_status()
-            results[key] = {'status': 'success', 'response': response.json()}
-        except requests.exceptions.RequestException as e:
-            results[key] = {'status': 'error', 'error': str(e)}
+        results[key] = api_client.store(database_url, transformed_data)
 
     return results
 
 # Store all documents in the database
 if st.button("Upload"):
-    url = "http://192.168.10.50:8000/store_ocr_data"
+    url = "store_ocr_data"
     db_response = transform_and_send(input_data, url)
 
     # Debugging: Show database response

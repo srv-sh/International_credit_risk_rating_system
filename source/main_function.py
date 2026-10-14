@@ -1,44 +1,38 @@
 import json
+import os
 import re
 import streamlit as st
 import requests
 from source.conversion import ReadJSON, GetOutput, MarkDown
 from source.config import AgentCall, InputList
 from source.calculation import FinancialCalculator
+from source import api_client
+
+SAVED_RESPONSE_PATH = "saved_responses/input_data.json"
+SAVED_LLM_PATH = "saved_responses/llm_results.json"
 # from Responses import main
 
 class Main:
 
     def hit_fastapi(self, files):
-        url = "http://192.168.10.50:8000/uploadfiles"
-
-        if files:
-            # Prepare the files for the API request
-            files_to_upload = [
-                ('files', files[0]),  # Balance sheet image
-                ('files', files[1]),  # Cash flow sheet image
-                ('files', files[2])   # Profit and loss sheet image
-            ]
-
-            try:
-                # Send a POST request to the FastAPI endpoint with the uploaded files
-                response = requests.post(url, files=files_to_upload)
-                response.raise_for_status()  # Raise error for HTTP codes 4xx/5xx
-
-                # print("Response JSON:")
-                # print(response.json())
-                return response.json()  # Return the JSON response directly
-
-            except requests.exceptions.RequestException as e:
-                print(f"Request failed: {e}")
-                st.error(f"Request failed: {e}")
-                return None  # Return None if the request fails
-        else:
-            st.error("No files to upload.")
+        """Send balance sheet, cash flow and P&L images to the Docker backend's /extract."""
+        # Reuse a saved backend response instead of calling the LLM (set USE_SAVED_RESPONSE=0 to disable)
+        if os.getenv("USE_SAVED_RESPONSE", "1") == "1" and os.path.exists(SAVED_RESPONSE_PATH):
+            with open(SAVED_RESPONSE_PATH, encoding="utf-8") as f:
+                return json.load(f)
+        try:
+            data = api_client.extract_statements(files)
+        except api_client.BackendError as e:
+            print(f"Request failed: {e}")
+            st.error(str(e))
             return None
-        
+        llm_errors = {k: v["llm_error"] for k, v in data.items() if v.get("llm_error")}
+        if llm_errors:
+            st.warning("Backend LLM step failed, showing raw OCR tables instead: "
+                       + next(iter(llm_errors.values()))[:300])
+        return data
 
-    def store_llm_data(self, database_url, markdown, results):
+    def store_llm_data(self, kind, markdown, results):
 
         sheet = InputList()
 
@@ -60,12 +54,7 @@ class Main:
         print(f"Sending transformed data: {transformed_data}")
 
         # Sending transformed data to the database URL
-        try:
-            response = requests.post(database_url, json=transformed_data)
-            response.raise_for_status()
-            return {'status': 'success', 'response': response.json()}
-        except requests.exceptions.RequestException as e:
-            return {'status': 'error', 'error': str(e)}
+        return api_client.store(kind, transformed_data)
 
 
         
@@ -105,16 +94,25 @@ class Main:
             # Initialize GetOutput with the agent and markdown table
             # get_output = GetOutput(markdown_output)
 
-            agent = AgentCall(self.markdown_output)
+            if os.path.exists(SAVED_LLM_PATH):
+                with open(SAVED_LLM_PATH, encoding="utf-8") as f:
+                    results = json.load(f)
+            elif os.getenv("USE_SAVED_RESPONSE", "1") == "1":
+                st.error(f"No saved LLM result at {SAVED_LLM_PATH}; set USE_SAVED_RESPONSE=0 to call the LLM once.")
+                st.stop()
+            else:
+                agent = AgentCall(self.markdown_output)
 
-            # Get and print results
-            results = agent.generate_response(sheet.item)
+                # Get and print results
+                results = agent.generate_response(sheet.item)
+                with open(SAVED_LLM_PATH, "w", encoding="utf-8") as f:
+                    json.dump(results, f, ensure_ascii=False, indent=2, default=str)
             print(results)
 
         else:
             print("JSON data not found.")
 
-        url = "http://192.168.10.50:8000/store_llm_data"
+        url = "llm_data"
         storedb = self.store_llm_data(url, self.markdown_output, results)
 
         print(f"THE DATABASE RESPONSE IS: {storedb}")
@@ -183,10 +181,15 @@ class Main:
             if terms is None:
                 values_2023[key] = 0
                 continue
+            if isinstance(terms, (int, float)):
+                values_2023[key] = float(terms)  # LLM returned the value itself
+                continue
+            if isinstance(terms, str):
+                terms = [terms]
 
             matched_values = []
             for term in terms:
-                if term is None:
+                if not isinstance(term, str):
                     continue
                 term = term.strip().lower()  # Normalize term
                 if term in particulars:
