@@ -5,3 +5,5 @@ saved_images
 test2.py
 source/__pycache__
 input
+
+.env
