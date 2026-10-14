@@ -16,9 +16,5 @@ RUN pip install --upgrade pip && pip install -r requirements-docker.txt
 
 COPY . .
 
-# src/GetTableFromImage.py loads YOLO weights from a hardcoded absolute path
-RUN mkdir -p /home/sourav/workspace/CreditScoring-refined-/data \
-    && cp runs/detect/train3/weights/best.pt /home/sourav/workspace/CreditScoring-refined-/data/best.pt
-
 EXPOSE 8000
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "fastapi_app:app", "--host", "0.0.0.0", "--port", "8000"]
