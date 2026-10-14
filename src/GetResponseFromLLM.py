@@ -1,15 +1,42 @@
-import os
-from openai import OpenAI
 import pandas as pd
 import re
 from io import StringIO
 import traceback
+import os
+
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
+
+try:
+    from google import genai
+except ImportError:
+    genai = None
 
 class GetResponseFromOpenAI:
-    def __init__(self):
-        # Initialize OpenAI client from the OPENAI_API_KEY environment variable
-        self.client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-        self.model = "gpt-4-turbo"  # or "gpt-4-turbo" if needed
+    def __init__(self, provider=None):
+        self.provider = (provider or os.getenv("LLM_PROVIDER", "openai")).lower()
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4-turbo")
+        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+
+        if self.provider == "openai":
+            if OpenAI is None:
+                raise ImportError("openai is not installed. Run: pip install openai")
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY is missing. Set it or use provider=gemini.")
+            self.client = OpenAI(api_key=api_key)
+        elif self.provider == "gemini":
+            if genai is None:
+                raise ImportError("google-genai is not installed. Run: pip install google-genai")
+            api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY is missing. Set one or use provider=openai.")
+            self.client = genai.Client(api_key=api_key)
+            self.gemini_fallback_model = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash")
+        else:
+            raise ValueError("provider must be 'openai' or 'gemini'")
 
     def remove_markdown_separator(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -153,15 +180,16 @@ class GetResponseFromOpenAI:
     def get_response(self, incorrect_markdown):
         try:
             prompt = self.prepare_prompt(incorrect_markdown)
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.0,
-                max_tokens=4000
-            )
-            response_text = response.choices[0].message.content.strip()
+            if self.provider == "openai":
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.0,
+                    max_tokens=4000,
+                )
+                response_text = response.choices[0].message.content.strip()
+            else:
+                response_text = self._gemini_response(prompt)
             df = self.extract_markdown_table_to_df(response_text)
         
 
@@ -169,6 +197,26 @@ class GetResponseFromOpenAI:
         except Exception as e:
             print("Traceback:", traceback.format_exc())
             return f"Error from llm : {e}"
+
+    def _gemini_response(self, prompt):
+        models = [self.gemini_model]
+        if self.gemini_fallback_model and self.gemini_fallback_model not in models:
+            models.append(self.gemini_fallback_model)
+
+        last_error = None
+        for model_name in models:
+            try:
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config={"temperature": 0.0, "max_output_tokens": 4000},
+                )
+                return (response.text or "").strip()
+            except Exception as e:
+                last_error = e
+                continue
+
+        raise last_error
 
 # Interactive prompt loop
 if __name__ == "__main__":

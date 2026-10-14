@@ -9,6 +9,7 @@ numpy==1.26.4
 scikit-learn
 tensorflow-cpu==2.19.0
 openai
+google-genai
 huggingface-hub==0.32.3
 paddleocr==3.0.3
 paddlex[ocr]==3.0.3
