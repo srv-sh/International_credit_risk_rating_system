@@ -3,7 +3,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { buildGraph, getGraph } from '../api/endpoints'
 import Chart from '../components/Chart'
+import AnimatedNumber from '../components/AnimatedNumber'
 import FlowFooter from '../components/FlowFooter'
+import Reveal from '../components/Reveal'
 import { ErrorBox, Notice } from '../components/Status'
 import RadialGauge from '../components/blocks/RadialGauge'
 import { useAppStore } from '../store/useAppStore'
@@ -47,7 +49,7 @@ export default function Graphs() {
         <p className="lede">The calculated rating, broken down by ratio and by category.</p>
       </div>
 
-      <div className="headline">
+      <Reveal className="headline">
         <RadialGauge
           value={result.quantitative_max ? result.quantitative_total / result.quantitative_max : 0}
           caption={`${result.quantitative_total}/${result.quantitative_max}`}
@@ -57,7 +59,7 @@ export default function Graphs() {
         <div className="headline-facts">
           <div className="stat">
             <span>Score</span>
-            <strong>{result.quantitative_percentage.toFixed(1)}%</strong>
+            <strong><AnimatedNumber value={result.quantitative_percentage} decimals={1} suffix="%" /></strong>
             <em>{result.quantitative_total} of {result.quantitative_max} points</em>
           </div>
           <div className="stat">
@@ -71,9 +73,9 @@ export default function Graphs() {
             {!result.score_id && <em>storage was unreachable</em>}
           </div>
         </div>
-      </div>
+      </Reveal>
 
-      <div className="card tight">
+      <Reveal delay={0.08} className="card tight">
         <div className="card-head">
           <div className="segmented" role="tablist" aria-label="Chart">
             {tabs.map((g) => (
@@ -89,7 +91,7 @@ export default function Graphs() {
         <ErrorBox error={figure.error} />
         {figure.isLoading && <div className="chart-skeleton" aria-hidden="true" />}
         {figure.data && <Chart figure={figure.data} />}
-      </div>
+      </Reveal>
 
       <FlowFooter />
     </section>

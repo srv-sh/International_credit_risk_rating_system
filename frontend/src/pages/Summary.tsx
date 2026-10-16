@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Label, RatioResult, SheetKey } from '../api/types'
+import AnimatedNumber from '../components/AnimatedNumber'
 import FlowFooter from '../components/FlowFooter'
+import Reveal from '../components/Reveal'
 import { Notice } from '../components/Status'
 import RadialGauge from '../components/blocks/RadialGauge'
 import StackedBars from '../components/blocks/StackedBars'
@@ -119,7 +121,7 @@ export default function Summary() {
         </div>
       )}
 
-      <div className="headline">
+      <Reveal className="headline">
         <RadialGauge
           value={result.quantitative_max ? result.quantitative_total / result.quantitative_max : 0}
           caption={`${result.quantitative_total}/${result.quantitative_max}`}
@@ -131,11 +133,11 @@ export default function Summary() {
           <div className={`stat stat-accent band-${result.quantitative_label.toLowerCase()}`}>
             <span>Rating</span>
             <strong>{result.quantitative_label}</strong>
-            <em>{result.quantitative_percentage.toFixed(1)}% of available points</em>
+            <em><AnimatedNumber value={result.quantitative_percentage} decimals={1} suffix="% of available points" /></em>
           </div>
           <div className="stat">
             <span>Points</span>
-            <strong>{result.quantitative_total} / {result.quantitative_max}</strong>
+            <strong><AnimatedNumber value={result.quantitative_total} decimals={1} /> / {result.quantitative_max}</strong>
             <em>{ratios.length} indicators</em>
           </div>
           <div className="stat">
@@ -144,16 +146,16 @@ export default function Summary() {
             {!result.score_id && <em>storage was unreachable</em>}
           </div>
         </div>
-      </div>
+      </Reveal>
 
-      <div className="card">
+      <Reveal delay={0.08} className="card">
         <StackedBars
           title="Points earned by category"
           data={result.categories.map((c) => ({ name: c.name, score: c.score, max: c.max_score }))}
         />
-      </div>
+      </Reveal>
 
-      <div className="card tight">
+      <Reveal delay={0.16} className="card tight">
         <div className="card-head">
           <h2>Indicators</h2>
           <div className="chips" role="group" aria-label="Filter by band">
@@ -225,7 +227,7 @@ export default function Summary() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Reveal>
 
       <div className="split">
         <div className="split-main">
