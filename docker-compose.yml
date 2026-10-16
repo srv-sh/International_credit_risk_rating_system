@@ -36,6 +36,13 @@ services:
     environment:
       DB_API_URL: http://db_api:8001
       CORS_ORIGINS: http://localhost:8080
+      # The OCR service runs outside this compose file. "localhost" here would
+      # mean this container, not your machine, so default to the host gateway.
+      # Set BACKEND_URL in .env to point somewhere else.
+      BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal:8000}
+    # host.docker.internal exists by default on Docker Desktop but not on Linux
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8002:8002"
     depends_on:

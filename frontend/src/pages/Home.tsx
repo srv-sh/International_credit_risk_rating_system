@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { runOcr } from '../api/endpoints'
 import type { SheetKey } from '../api/types'
 import FlowFooter from '../components/FlowFooter'
+import { errorMessage } from '../api/client'
 import { ErrorBox } from '../components/Status'
 import UploadDropzone from '../components/blocks/UploadDropzone'
 import { useToast } from '../components/blocks/ToastStack'
@@ -41,6 +42,12 @@ export default function Home() {
     },
     onError: () => toast.push('error', 'Extraction failed. Nothing was changed.'),
   })
+
+  // The OCR service is a separate deployment, so an unreachable backend is a
+  // setup problem rather than something the user did wrong. Say so plainly and
+  // keep the raw message available for whoever has to fix it.
+  const unreachable = !!ocr.error && /could not reach backend|connection refused|network error/i
+    .test(errorMessage(ocr.error))
 
   const missingUser = FIELDS.filter((f) => !form[f.key].trim()).map((f) => f.label)
   const addressMissing = !form.address.trim()
@@ -120,7 +127,17 @@ export default function Home() {
         </label>
       </fieldset>
 
-      <ErrorBox error={ocr.error} />
+      {ocr.error && (unreachable ? (
+        <div className="alert error" role="alert">
+          <strong>The OCR service is not responding.</strong> It runs separately from this app, so
+          extraction cannot start until it is up. Nothing was changed and your files are still
+          attached. To carry on without it, tick "Use the saved extraction" above.
+          <details>
+            <summary>Technical detail</summary>
+            <code>{errorMessage(ocr.error)}</code>
+          </details>
+        </div>
+      ) : <ErrorBox error={ocr.error} />)}
 
       <FlowFooter
         blockedBy={blockedBy}

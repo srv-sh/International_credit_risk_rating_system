@@ -49,6 +49,33 @@ docker compose down -v         # stop and delete the database too
 With `USE_SAVED_RESPONSE=1` the app never calls the OCR backend or the LLM, so it
 runs end to end with no API key. Tick "Use the saved extraction" on the first step.
 
+### Pointing at the OCR service
+
+Uploading real images needs the OCR service, which is a separate deployment and
+is not in this repo. It serves `POST /extract`. Set `USE_SAVED_RESPONSE=0` once
+you have it.
+
+Watch the host name. The api runs inside a container, so `localhost` there means
+the container itself, not your machine. A backend running on your own machine is
+reached at `host.docker.internal`, which is what `.env.example` uses:
+
+```
+USE_SAVED_RESPONSE=0
+BACKEND_URL=http://host.docker.internal:8000
+OPENAI_API_KEY=sk-...
+```
+
+If the OCR service runs as its own container, add it to `docker-compose.yml` and
+use its service name instead, for example `http://ocr:8000`. Either way, restart
+the api so it picks the change up:
+
+```bash
+docker compose up -d api
+```
+
+When the service is down, the first step says so and keeps your files, and you
+can still tick "Use the saved extraction" to carry on.
+
 ## Local development
 
 ```bash
