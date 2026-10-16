@@ -1,82 +1,136 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { runOcr } from '../api/endpoints'
 import type { SheetKey } from '../api/types'
+import FlowFooter from '../components/FlowFooter'
 import { ErrorBox } from '../components/Status'
+import UploadDropzone from '../components/blocks/UploadDropzone'
+import { useToast } from '../components/blocks/ToastStack'
 import { useAppStore, type UserInfo } from '../store/useAppStore'
 
 const UPLOADS: { key: SheetKey; label: string }[] = [
-  { key: 'bs', label: 'Balance Sheet image' },
-  { key: 'is', label: 'Profit & Loss (Income) Sheet image' },
-  { key: 'cfs', label: 'Cash Flow Sheet image' },
+  { key: 'bs', label: 'Balance sheet' },
+  { key: 'is', label: 'Profit & loss (income statement)' },
+  { key: 'cfs', label: 'Cash flow statement' },
+]
+
+const FIELDS: { key: keyof UserInfo; label: string; type: string; autoComplete: string }[] = [
+  { key: 'name', label: 'Full name', type: 'text', autoComplete: 'name' },
+  { key: 'phone', label: 'Phone', type: 'tel', autoComplete: 'tel' },
+  { key: 'email', label: 'Email', type: 'email', autoComplete: 'email' },
 ]
 
 export default function Home() {
-  const navigate = useNavigate()
   const { user, setUser, setOcr } = useAppStore()
+  const toast = useToast()
   const [form, setForm] = useState<UserInfo>(user)
   const [files, setFiles] = useState<Partial<Record<SheetKey, File>>>({})
   const [useSaved, setUseSaved] = useState(false)
+  const [touched, setTouched] = useState<Partial<Record<keyof UserInfo, boolean>>>({})
+
+  const allFiles = UPLOADS.every((u) => files[u.key])
 
   const ocr = useMutation({
     mutationFn: () => runOcr(useSaved && !allFiles ? null : (files as Record<SheetKey, File>), useSaved),
     onSuccess: (data) => {
       setUser(form)
       setOcr(data)
-      navigate('/balance-sheet')
+      toast.push('ok', data.source === 'saved'
+        ? 'Loaded the saved extraction. Check each statement before calculating.'
+        : 'Statements extracted. Check each one before calculating.')
     },
+    onError: () => toast.push('error', 'Extraction failed. Nothing was changed.'),
   })
 
-  const allFiles = UPLOADS.every((u) => files[u.key])
-  const userComplete = Object.values(form).every((v) => v.trim())
-  const canSubmit = userComplete && (allFiles || useSaved) && !ocr.isPending
+  const missingUser = FIELDS.filter((f) => !form[f.key].trim()).map((f) => f.label)
+  const addressMissing = !form.address.trim()
+  const userComplete = missingUser.length === 0 && !addressMissing
+
+  const blockedBy = !userComplete
+    ? 'Fill in the applicant details to continue'
+    : !allFiles && !useSaved
+      ? 'Add all three statement images, or use the saved extraction'
+      : null
+
+  const err = (key: keyof UserInfo) => touched[key] && !form[key].trim()
 
   return (
     <section className="page narrow">
-      <h1>Home</h1>
-
-      <h2>User information</h2>
-      <div className="form-grid">
-        {(['name', 'phone', 'email'] as const).map((field) => (
-          <label key={field}>
-            {field === 'name' ? 'Full name' : field[0].toUpperCase() + field.slice(1)}
-            <input
-              type={field === 'email' ? 'email' : 'text'}
-              value={form[field]}
-              onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-            />
-          </label>
-        ))}
-        <label className="full">
-          Address
-          <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-        </label>
+      <div className="page-head">
+        <h1>New credit rating</h1>
+        <p className="lede">
+          The rating is built from three financial statements. Everything after this step is derived
+          from what you provide here.
+        </p>
       </div>
 
-      <h2>Statement images</h2>
-      <div className="form-grid">
-        {UPLOADS.map((u) => (
-          <label key={u.key} className="full">
-            {u.label}
-            <input
-              type="file"
-              accept="image/png,image/jpeg"
-              onChange={(e) => setFiles({ ...files, [u.key]: e.target.files?.[0] })}
+      <fieldset className="card">
+        <legend>Applicant</legend>
+        <div className="form-grid">
+          {FIELDS.map((f) => (
+            <label key={f.key} className="field">
+              <span>{f.label} <abbr title="required" aria-label="required">*</abbr></span>
+              <input
+                type={f.type}
+                autoComplete={f.autoComplete}
+                value={form[f.key]}
+                aria-invalid={err(f.key) || undefined}
+                onBlur={() => setTouched({ ...touched, [f.key]: true })}
+                onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+              />
+              {err(f.key) && <small className="field-error">{f.label} is required</small>}
+            </label>
+          ))}
+          <label className="field full">
+            <span>Address <abbr title="required" aria-label="required">*</abbr></span>
+            <textarea
+              rows={2}
+              autoComplete="street-address"
+              value={form.address}
+              aria-invalid={(touched.address && addressMissing) || undefined}
+              onBlur={() => setTouched({ ...touched, address: true })}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
             />
+            {touched.address && addressMissing && <small className="field-error">Address is required</small>}
           </label>
-        ))}
-        <label className="checkbox full">
+        </div>
+      </fieldset>
+
+      <fieldset className="card">
+        <legend>Statement images</legend>
+        <p className="hint">
+          One image per statement. They are read in order, so check that each one is in the right slot.
+        </p>
+        <div className="dropzones">
+          {UPLOADS.map((u) => (
+            <UploadDropzone
+              key={u.key}
+              label={u.label}
+              file={files[u.key]}
+              onFile={(f) => setFiles({ ...files, [u.key]: f })}
+            />
+          ))}
+        </div>
+        <label className="checkbox">
           <input type="checkbox" checked={useSaved} onChange={(e) => setUseSaved(e.target.checked)} />
-          Use the saved OCR response (skips the OCR backend and LLM)
+          <span>
+            Use the saved extraction
+            <small>Skips the OCR backend and the LLM. Useful for a dry run without uploading anything.</small>
+          </span>
         </label>
-      </div>
+      </fieldset>
 
       <ErrorBox error={ocr.error} />
-      <button className="primary" disabled={!canSubmit} onClick={() => ocr.mutate()}>
-        {ocr.isPending ? 'Processing files…' : 'Next'}
-      </button>
-      {!userComplete && <p className="hint">Fill in all user details to continue.</p>}
+
+      <FlowFooter
+        blockedBy={blockedBy}
+        busy={ocr.isPending}
+        continueLabel={ocr.isPending ? 'Extracting…' : 'Extract statements'}
+        onContinue={async () => {
+          await ocr.mutateAsync()
+          return true
+        }}
+      />
     </section>
   )
 }

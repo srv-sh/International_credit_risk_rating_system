@@ -1,10 +1,18 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { getQualitativeQuestions, score } from '../api/endpoints'
 import { ErrorBox } from '../components/Status'
 import { useAppStore } from '../store/useAppStore'
 
-/** Qualitative questionnaire and final rating. */
+/**
+ * Qualitative questionnaire and final rating.
+ *
+ * Retired: the rating is quantitative only now, scored out of 60, and is
+ * calculated on the Indicators step. This page is off the flow and out of the
+ * nav, but the route still resolves and the endpoints it calls are untouched,
+ * so it is here if the qualitative half is ever brought back. Scoring from
+ * here produces a rating out of 100, which will not match the rest of the app.
+ */
 export default function Parameters() {
   const navigate = useNavigate()
   const { statements, records, qualitativeAnswers, setQualitativeAnswers, setResult } = useAppStore()
@@ -39,6 +47,11 @@ export default function Parameters() {
   return (
     <section className="page narrow">
       <h1>Qualitative Parameters</h1>
+      <div className="alert warn" role="status">
+        This step is retired. The rating is quantitative only, out of 60, and is calculated on the{' '}
+        <Link to="/formulas">indicators step</Link>. Scoring here produces a rating out of 100 that
+        will not match the rest of the app.
+      </div>
       <ErrorBox error={questions.error} />
       {questions.data?.map((q) => {
         const header = q.category !== lastCategory ? <h2>{(lastCategory = q.category)}</h2> : null

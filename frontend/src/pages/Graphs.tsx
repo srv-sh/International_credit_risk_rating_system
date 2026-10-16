@@ -3,13 +3,17 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { buildGraph, getGraph } from '../api/endpoints'
 import Chart from '../components/Chart'
+import FlowFooter from '../components/FlowFooter'
 import { ErrorBox, Notice } from '../components/Status'
+import RadialGauge from '../components/blocks/RadialGauge'
 import { useAppStore } from '../store/useAppStore'
 
 const GRAPHS = [
-  { id: 'summary', label: 'Summary' },
-  { id: 'ratios', label: 'Ratios' },
-  { id: 'categories', label: 'Categories' },
+  { id: 'summary', label: 'Overview' },
+  { id: 'ratios', label: 'By ratio' },
+  { id: 'categories', label: 'By category' },
+  // Only rendered when a qualitative result exists, which it does not in the
+  // quantitative-only flow. Kept so an older saved score still charts.
   { id: 'qualitative', label: 'Qualitative' },
 ]
 
@@ -25,28 +29,69 @@ export default function Graphs() {
   })
 
   if (!result) {
-    return <section className="page"><Notice>No rating yet. Complete the <Link to="/parameters">parameters</Link> first.</Notice></section>
+    return (
+      <section className="page">
+        <Notice>
+          No rating yet. Calculate it on the <Link to="/formulas">indicators step</Link> first.
+        </Notice>
+      </section>
+    )
   }
+
+  const tabs = GRAPHS.filter((g) => g.id !== 'qualitative' || result.qualitative)
 
   return (
     <section className="page">
-      <h1>Quantitative Analysis</h1>
-      <div className="score-cards">
-        <div><span>Quantitative</span><strong>{result.quantitative_total}/{result.quantitative_max}</strong><em>{result.quantitative_label}</em></div>
-        {result.qualitative && (
-          <div><span>Qualitative</span><strong>{result.qualitative.total}/{result.qualitative.max_score}</strong></div>
-        )}
-        <div><span>Overall</span><strong>{result.overall_percentage.toFixed(1)}%</strong><em>{result.overall_label}</em></div>
+      <div className="page-head">
+        <h1>Analysis</h1>
+        <p className="lede">The calculated rating, broken down by ratio and by category.</p>
       </div>
-      <div className="tabs">
-        {GRAPHS.filter((g) => g.id !== 'qualitative' || result.qualitative).map((g) => (
-          <button key={g.id} className={g.id === graphId ? 'active' : ''} onClick={() => setGraphId(g.id)}>{g.label}</button>
-        ))}
+
+      <div className="headline">
+        <RadialGauge
+          value={result.quantitative_max ? result.quantitative_total / result.quantitative_max : 0}
+          caption={`${result.quantitative_total}/${result.quantitative_max}`}
+          band={result.quantitative_label}
+          label="Quantitative rating"
+        />
+        <div className="headline-facts">
+          <div className="stat">
+            <span>Score</span>
+            <strong>{result.quantitative_percentage.toFixed(1)}%</strong>
+            <em>{result.quantitative_total} of {result.quantitative_max} points</em>
+          </div>
+          <div className="stat">
+            <span>Indicators scored</span>
+            <strong>{result.ratios.length}</strong>
+            <em>across {result.categories.length} categories</em>
+          </div>
+          <div className="stat">
+            <span>Saved as</span>
+            <strong>{result.score_id ? `#${result.score_id}` : 'not saved'}</strong>
+            {!result.score_id && <em>storage was unreachable</em>}
+          </div>
+        </div>
       </div>
-      <ErrorBox error={figure.error} />
-      {figure.isLoading && <p className="hint">Loading chart…</p>}
-      {figure.data && <Chart figure={figure.data} />}
-      <Link className="button primary" to="/summary">Next</Link>
+
+      <div className="card tight">
+        <div className="card-head">
+          <div className="segmented" role="tablist" aria-label="Chart">
+            {tabs.map((g) => (
+              <button
+                key={g.id} type="button" role="tab" aria-selected={g.id === graphId}
+                className={g.id === graphId ? 'active' : ''} onClick={() => setGraphId(g.id)}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <ErrorBox error={figure.error} />
+        {figure.isLoading && <div className="chart-skeleton" aria-hidden="true" />}
+        {figure.data && <Chart figure={figure.data} />}
+      </div>
+
+      <FlowFooter />
     </section>
   )
 }
