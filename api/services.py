@@ -21,6 +21,7 @@ from source.score_calc import ScoreCalculator
 
 ROOT = Path(__file__).resolve().parent.parent
 QUALITATIVE_PATH = ROOT / "json" / "qualitative_ques.json"
+INDICATORS_PATH = ROOT / "json" / "indicators.json"
 SAVED_OCR_PATH = ROOT / "saved_responses" / "input_data.json"
 
 
@@ -157,7 +158,8 @@ def calculate_statement(sheet, table, mapping=None, year_column=None, use_llm=Fa
                     total += number
                     matched.append(str(term))
         values[item] = total
-        used[item] = matched
+        # Keep every chosen particular so edits stick even when its cell isn't numeric
+        used[item] = [str(t) for t in terms]
         if not matched:
             missing.append(item)
 
@@ -226,14 +228,55 @@ RATIOS = [
      ["revenue", "cash flows from financing activities", "total assets"]),
 ]
 CATEGORIES = ["Leverage", "Liquidity", "Profitability", "Coverage", "Operational Efficiency", "Earning Quality"]
-QUANTITATIVE_MAX = sum(r[3] for r in RATIOS)  # 60
+BANDS = ["Excellent", "Good", "Marginal", "Unacceptable"]
+INDICATORS_ROOT = "Quantitative Indicators (60)"
+
+
+# ---------- editable weights (json/indicators.json) ----------
+# ScoreCalculator decides the band (thresholds); the file decides each indicator's
+# weight ("Scale") and the points awarded per band.
+
+def list_indicators():
+    """Flat rows in RATIOS order: weight and points per band for each indicator."""
+    data = json.loads(INDICATORS_PATH.read_text(encoding="utf-8"))[INDICATORS_ROOT]
+    by_name = {name: (group, entry) for group, g in data.items() for name, entry in g["Indicators"].items()}
+    rows = []
+    for key, name, cat, default_max, *_ in RATIOS:
+        group, entry = by_name.get(name, (cat, {"Scale": default_max, "Scoring": {}}))
+        rows.append({
+            "key": key, "name": name, "category": cat, "group": group, "scale": float(entry["Scale"]),
+            "scoring": {band: float(entry["Scoring"].get(band, 0)) for band in BANDS},
+        })
+    return rows
+
+
+def save_indicators(rows):
+    known = {name: (key, cat) for key, name, cat, *_ in RATIOS}
+    if {r["name"] for r in rows} != set(known) or len(rows) != len(known):
+        raise ServiceError(f"Expected exactly the {len(known)} quantitative indicators")
+    for r in rows:
+        if r["scale"] < 0:
+            raise ServiceError(f"{r['name']}: weight must be >= 0")
+        for band in BANDS:
+            points = r["scoring"].get(band)
+            if points is None or not 0 <= points <= r["scale"]:
+                raise ServiceError(f"{r['name']}: {band} points must be between 0 and the weight ({r['scale']:g})")
+    data = {}
+    for r in rows:
+        group = r.get("group") or known[r["name"]][1]
+        data.setdefault(group, {"Indicators": {}})["Indicators"][r["name"]] = {
+            "Scale": r["scale"], "Scoring": {band: r["scoring"][band] for band in BANDS},
+        }
+    INDICATORS_PATH.write_text(json.dumps({INDICATORS_ROOT: data}, indent=4), encoding="utf-8")
+    return list_indicators()
 
 
 def list_formulas():
+    weights = {i["key"]: i["scale"] for i in list_indicators()}
     return [
         {"key": key, "name": name, "category": cat, "latex": latex, "inputs": inputs,
-         "preference": pref, "max_score": max_score}
-        for key, name, cat, max_score, pref, latex, inputs in RATIOS
+         "preference": pref, "max_score": weights[key]}
+        for key, name, cat, _, pref, latex, inputs in RATIOS
     ]
 
 
@@ -259,13 +302,14 @@ def score(values, qualitative_answers=None):
     """`values`: dict keyed by the spaced item names. Returns a ScoreResponse-shaped dict."""
     calc = FinancialCalculator(values)
     raw = {key: getattr(calc, f"{key}_calc")() for key, *_ in RATIOS}
-    scores, labels = ScoreCalculator([{"item": k, "value": v} for k, v in raw.items()]).calculate_scores()
+    _, labels = ScoreCalculator([{"item": k, "value": v} for k, v in raw.items()]).calculate_scores()
     labels = [label for label in labels if label.strip()]  # drop category separators
+    weights = {i["key"]: i for i in list_indicators()}
 
     ratios = [
-        {"key": key, "name": name, "category": cat, "value": _finite(raw[key]), "score": scores[f"{key}_score"],
-         "max_score": max_score, "label": label, "preference": pref}
-        for (key, name, cat, max_score, pref, *_), label in zip(RATIOS, labels)
+        {"key": key, "name": name, "category": cat, "value": _finite(raw[key]),
+         "score": weights[key]["scoring"][label], "max_score": weights[key]["scale"], "label": label, "preference": pref}
+        for (key, name, cat, _, pref, *_), label in zip(RATIOS, labels)
     ]
     categories = [
         {"name": cat,
@@ -274,16 +318,17 @@ def score(values, qualitative_answers=None):
         for cat in CATEGORIES
     ]
     quant_total = sum(r["score"] for r in ratios)
-    quant_pct = _pct(quant_total, QUANTITATIVE_MAX)
+    quant_max = sum(r["max_score"] for r in ratios)
+    quant_pct = _pct(quant_total, quant_max)
 
     qual = score_qualitative(qualitative_answers) if qualitative_answers is not None else None
     overall_total = quant_total + (qual["total"] if qual else 0)
-    overall_max = QUANTITATIVE_MAX + (qual["max_score"] if qual else 0)
+    overall_max = quant_max + (qual["max_score"] if qual else 0)
     overall_pct = _pct(overall_total, overall_max)
 
     return {
         "ratios": ratios, "categories": categories,
-        "quantitative_total": quant_total, "quantitative_max": QUANTITATIVE_MAX,
+        "quantitative_total": quant_total, "quantitative_max": quant_max,
         "quantitative_percentage": quant_pct, "quantitative_label": rating_label(quant_pct),
         "qualitative": qual,
         "overall_total": overall_total, "overall_max": overall_max,
@@ -478,8 +523,11 @@ def _summary_figure(result):
                     fill_color="#E580BB", align="left"),
         cells=dict(values=list(columns[:7]), fill_color=[base, base, base, base, base, label_fill, base], align="left"),
     ), row=2, col=1)
+    # Centre the label on the pie's own subplot domain
+    pie_x, pie_y = fig.data[0].domain.x, fig.data[0].domain.y
     fig.update_layout(barmode="overlay", height=1000, annotations=list(fig.layout.annotations) + [
-        dict(text=f"{pct:.1f}%", x=0.225, y=0.83, xref="paper", yref="paper", showarrow=False, font_size=36),
+        dict(text=f"{pct:.1f}%", x=sum(pie_x) / 2, y=sum(pie_y) / 2, xref="paper", yref="paper",
+             xanchor="center", yanchor="middle", showarrow=False, font_size=36),
     ])
     return fig
 

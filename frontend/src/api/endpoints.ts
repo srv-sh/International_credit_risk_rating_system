@@ -1,6 +1,6 @@
 import { api, db } from './client'
 import type {
-  Formula, OcrResponse, PlotlyFigure, QualitativeQuestion, QualitativeResult, ScoreRequest, ScoreResponse,
+  Formula, Indicator, OcrResponse, PlotlyFigure, QualitativeQuestion, QualitativeResult, ScoreRequest, ScoreResponse,
   SheetKey, StatementItems, StatementRequest, StatementResult,
 } from './types'
 
@@ -35,6 +35,10 @@ export const scoreQualitative = async (answers: string[]) =>
 export const score = async (body: ScoreRequest) => (await api.post<ScoreResponse>('/score', body)).data
 
 export const getFormulas = async () => (await api.get<Formula[]>('/formulas')).data
+
+export const getIndicators = async () => (await api.get<Indicator[]>('/indicators')).data
+
+export const saveIndicators = async (rows: Indicator[]) => (await api.put<Indicator[]>('/indicators', rows)).data
 
 export const getGraphIds = async () => (await api.get<string[]>('/graphs')).data
 

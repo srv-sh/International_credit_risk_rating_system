@@ -18,7 +18,7 @@ load_dotenv()
 
 from api import services  # noqa: E402  (after load_dotenv so source/ modules see .env)
 from api.schemas import (  # noqa: E402
-    Formula, OcrResponse, QualitativeQuestion, QualitativeRequest, QualitativeResult,
+    Formula, Indicator, OcrResponse, QualitativeQuestion, QualitativeRequest, QualitativeResult,
     ScoreRequest, ScoreResponse, StatementRequest, StatementResult,
 )
 
@@ -104,6 +104,17 @@ def final_score(body: ScoreRequest):
 @app.get("/formulas", response_model=list[Formula], tags=["formulas"])
 def formulas():
     return services.list_formulas()
+
+
+@app.get("/indicators", response_model=list[Indicator], tags=["indicators"])
+def indicators():
+    return services.list_indicators()
+
+
+@app.put("/indicators", response_model=list[Indicator], tags=["indicators"])
+def update_indicators(body: list[Indicator]):
+    """Replace the weights and band points in json/indicators.json; used by every later /score."""
+    return services.save_indicators([i.model_dump() for i in body])
 
 
 @app.get("/graphs", tags=["graphs"])

@@ -30,6 +30,8 @@ export default function EditableTable({ table, onChange, height = 600 }: Props) 
   const rows = useMemo(() => toRows(table), [table])
   const [newColumn, setNewColumn] = useState('')
   const [selectedRow, setSelectedRow] = useState<number | null>(null)
+  const [renameFrom, setRenameFrom] = useState('')
+  const [renameTo, setRenameTo] = useState('')
 
   const colDefs = useMemo<ColDef<Row>[]>(
     () => columns.map((c, i) => ({ field: c, headerName: c, editable: true, pinned: i === 0 ? 'left' : undefined, flex: i === 0 ? 2 : 1 })),
@@ -56,6 +58,18 @@ export default function EditableTable({ table, onChange, height = 600 }: Props) 
     setNewColumn('')
   }
   const deleteColumn = (name: string) => emit(columns.filter((c) => c !== name), rows)
+  const renameColumn = () => {
+    const name = renameTo.trim()
+    if (!renameFrom || !name || columns.includes(name)) return
+    const nextColumns = columns.map((c) => (c === renameFrom ? name : c))
+    const nextRows = rows.map((r) => {
+      const { [renameFrom]: value, ...rest } = r
+      return { ...rest, [name]: value }
+    })
+    emit(nextColumns, nextRows)
+    setRenameFrom('')
+    setRenameTo('')
+  }
 
   return (
     <div className="editable-table">
@@ -68,6 +82,12 @@ export default function EditableTable({ table, onChange, height = 600 }: Props) 
           <option value="">Delete column…</option>
           {columns.slice(1).map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+        <select value={renameFrom} onChange={(e) => setRenameFrom(e.target.value)}>
+          <option value="">Rename column…</option>
+          {columns.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <input placeholder="New name" value={renameTo} maxLength={30} onChange={(e) => setRenameTo(e.target.value)} />
+        <button onClick={renameColumn} disabled={!renameFrom || !renameTo.trim() || columns.includes(renameTo.trim())}>Rename</button>
       </div>
       <div style={{ height }}>
         <AgGridReact<Row>

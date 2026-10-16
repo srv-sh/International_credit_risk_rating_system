@@ -108,3 +108,14 @@ export interface PlotlyFigure {
   data: Plotly.Data[]
   layout: Partial<Plotly.Layout>
 }
+
+export type Band = 'Excellent' | 'Good' | 'Marginal' | 'Unacceptable'
+
+export interface Indicator {
+  key: string
+  name: string
+  category: string
+  group: string
+  scale: number
+  scoring: Record<Band, number>
+}

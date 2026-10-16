@@ -198,3 +198,14 @@ class Formula(BaseModel):
     inputs: list[str]
     preference: str
     max_score: float
+
+
+# ---------- indicator weights ----------
+
+class Indicator(BaseModel):
+    key: str
+    name: str
+    category: str
+    group: str = Field(description="Section heading in json/indicators.json, e.g. 'A. Leverage'")
+    scale: float = Field(description="Weight: the most points this indicator can contribute")
+    scoring: dict[str, float] = Field(description="Points per band: Excellent, Good, Marginal, Unacceptable")

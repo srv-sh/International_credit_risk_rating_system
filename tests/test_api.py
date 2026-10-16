@@ -121,3 +121,33 @@ def test_ocr_requires_three_files():
 def test_cors_preflight():
     r = client.options("/score", headers={"Origin": "http://localhost:5173", "Access-Control-Request-Method": "POST"})
     assert r.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+@pytest.fixture
+def temp_indicators(tmp_path, monkeypatch):
+    path = tmp_path / "indicators.json"
+    path.write_bytes(services.INDICATORS_PATH.read_bytes())
+    monkeypatch.setattr(services, "INDICATORS_PATH", path)
+    return path
+
+
+def test_indicators_roundtrip_changes_score(temp_indicators):
+    rows = client.get("/indicators").json()
+    assert len(rows) == 16 and sum(r["scale"] for r in rows) == 60
+    dtn = next(r for r in rows if r["key"] == "dtn")
+    dtn["scale"], dtn["scoring"]["Marginal"] = 10, 9
+    assert client.put("/indicators", json=rows).status_code == 200
+
+    body = client.post("/score", json={"values": {"total liabilities": 40, "total assets": 100,
+                                                  "intangible assets": 0}}).json()
+    scored = next(r for r in body["ratios"] if r["key"] == "dtn")
+    assert scored["label"] == "Marginal" and scored["score"] == 9 and scored["max_score"] == 10
+    assert body["quantitative_max"] == 63
+    assert next(f for f in client.get("/formulas").json() if f["key"] == "dtn")["max_score"] == 10
+
+
+def test_indicators_validation(temp_indicators):
+    rows = client.get("/indicators").json()
+    rows[0]["scoring"]["Excellent"] = rows[0]["scale"] + 1
+    assert client.put("/indicators", json=rows).status_code == 400
+    assert client.put("/indicators", json=rows[1:]).status_code == 400

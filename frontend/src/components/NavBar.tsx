@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: '/income-sheet', label: 'Income Sheet' },
   { to: '/cashflow-sheet', label: 'Cashflow Sheet' },
   { to: '/formulas', label: 'Formulas' },
+  { to: '/weights', label: 'Weights' },
   { to: '/parameters', label: 'Parameters' },
   { to: '/graphs', label: 'Graphs' },
   { to: '/summary', label: 'Summary' },

@@ -4,6 +4,7 @@ import NavBar from './components/NavBar'
 import BalanceSheet from './pages/BalanceSheet'
 import CashflowSheet from './pages/CashflowSheet'
 import Home from './pages/Home'
+import Indicators from './pages/Indicators'
 import IncomeSheet from './pages/IncomeSheet'
 import Ocr from './pages/Ocr'
 import Parameters from './pages/Parameters'
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/income-sheet" element={<IncomeSheet />} />
             <Route path="/cashflow-sheet" element={<CashflowSheet />} />
             <Route path="/formulas" element={<Formulas />} />
+            <Route path="/weights" element={<Indicators />} />
             <Route path="/parameters" element={<Parameters />} />
             <Route path="/graphs" element={<Graphs />} />
             <Route path="/summary" element={<Summary />} />
