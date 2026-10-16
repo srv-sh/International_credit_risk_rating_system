@@ -7,3 +7,5 @@ source/__pycache__
 input
 
 .env
+
+node_modules/

@@ -1,17 +1,3 @@
-import streamlit as st
-# from source.main_function import Main
-
-
-
-if 'output' in st.session_state:
-    data = st.session_state.output
-
-else:
-    print("Output data not found")
-
-
-
-
 class ScoreCalculator:
     def __init__(self, data):
         # Initialize the class with the data dictionary

@@ -25,5 +25,31 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Deployment services. For local dev, run only `db` + `db_api` and use `npm run dev`.
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DB_API_URL: http://db_api:8001
+      CORS_ORIGINS: http://localhost:8080
+    ports:
+      - "8002:8002"
+    depends_on:
+      - db_api
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+      - db_api
+    restart: unless-stopped
+
 volumes:
   pgdata:

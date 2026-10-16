@@ -1,0 +1,12 @@
+{
+  "name": "credit-risk-rating-system",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"uvicorn api.main:app --reload --port 8002\" \"npm --prefix frontend run dev\"",
+    "db": "docker compose up -d db db_api",
+    "build": "npm --prefix frontend run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
