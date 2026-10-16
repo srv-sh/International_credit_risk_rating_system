@@ -1,9 +1,37 @@
-import { AllCommunityModule, ModuleRegistry, type ColDef } from 'ag-grid-community'
+import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef } from 'ag-grid-community'
 import { AgGridReact } from 'ag-grid-react'
 import { useMemo, useState } from 'react'
 import type { Table } from '../api/types'
 
 ModuleRegistry.registerModules([AllCommunityModule])
+
+/**
+ * The grid shipped with its stock theme, which read as a grey slab bolted onto
+ * the page. These are the same tokens index.css uses, so it now sits in the
+ * design rather than next to it.
+ */
+const gridTheme = themeQuartz.withParams({
+  accentColor: '#1d4ed8',
+  backgroundColor: '#ffffff',
+  foregroundColor: '#0c1427',
+  borderColor: '#e0e7f3',
+  chromeBackgroundColor: '#f6f8fd',
+  headerBackgroundColor: '#f6f8fd',
+  headerTextColor: '#6b7890',
+  headerFontWeight: 600,
+  headerFontSize: 11,
+  oddRowBackgroundColor: '#fcfdff',
+  rowHoverColor: '#f1f6ff',
+  selectedRowBackgroundColor: '#eef4ff',
+  rangeSelectionBorderColor: '#1d4ed8',
+  fontFamily: "'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif",
+  fontSize: 13,
+  rowHeight: 38,
+  headerHeight: 40,
+  borderRadius: 0,
+  wrapperBorder: false,
+  cellHorizontalPadding: 12,
+})
 
 type Cell = string | number | null
 type Row = Record<string, Cell>
@@ -91,6 +119,7 @@ export default function EditableTable({ table, onChange, height = 600 }: Props) 
       </div>
       <div style={{ height }}>
         <AgGridReact<Row>
+          theme={gridTheme}
           rowData={rows}
           columnDefs={colDefs}
           suppressFieldDotNotation

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import PageTransition from './components/PageTransition'
 import StepNav from './components/StepNav'
 import { ToastProvider } from './components/blocks/ToastStack'
 import { useFlow } from './flow'
@@ -49,6 +50,7 @@ export default function App() {
       <StepNav />
       <main id="main">
         <Suspense fallback={<div className="page"><p className="hint">Loading…</p></div>}>
+          <PageTransition>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/balance-sheet" element={<StepGuard><BalanceSheet /></StepGuard>} />
@@ -63,6 +65,7 @@ export default function App() {
             <Route path="/parameters" element={<Parameters />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </PageTransition>
         </Suspense>
       </main>
     </ToastProvider>

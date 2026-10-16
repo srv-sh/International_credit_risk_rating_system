@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { calculateStatement, getFormulas, getStatementItems, score } from '../api/endpoints'
 import type { SheetKey } from '../api/types'
+import AnimatedNumber from '../components/AnimatedNumber'
 import FlowFooter from '../components/FlowFooter'
 import Latex from '../components/Latex'
 import { ErrorBox } from '../components/Status'
@@ -113,7 +114,7 @@ export default function Formulas() {
         {preview.data && (
           <div className={`stat stat-accent band-${preview.data.quantitative_label.toLowerCase()}`}>
             <span>Rating so far</span>
-            <strong>{preview.data.quantitative_total} / {preview.data.quantitative_max}</strong>
+            <strong><AnimatedNumber value={preview.data.quantitative_total} decimals={1} /> / {preview.data.quantitative_max}</strong>
             <em>{preview.data.quantitative_label}</em>
           </div>
         )}

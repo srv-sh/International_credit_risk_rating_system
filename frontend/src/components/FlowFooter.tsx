@@ -31,7 +31,8 @@ export default function FlowFooter({ onContinue, blockedBy, continueLabel, busy,
     <div className="flow-footer">
       <div className="flow-footer-left">
         {prev && (
-          <button type="button" className="ghost" onClick={() => navigate(prev.path)}>
+          // dir tells PageTransition to slide backwards; see that file.
+          <button type="button" className="ghost" onClick={() => navigate(prev.path, { state: { dir: 'back' } })}>
             <svg viewBox="0 0 24 24" aria-hidden="true" className="chev"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             {prev.short}
           </button>
