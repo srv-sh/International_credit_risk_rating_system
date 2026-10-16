@@ -51,9 +51,26 @@ runs end to end with no API key. Tick "Use the saved extraction" on the first st
 
 ### Pointing at the OCR service
 
-Uploading real images needs the OCR service, which is a separate deployment and
-is not in this repo. It serves `POST /extract`. Set `USE_SAVED_RESPONSE=0` once
-you have it.
+Uploading real images needs the OCR service. It is not on this branch: it lives
+on **`dev_sourav_docker`** in this same repo, as a separate FastAPI app that
+serves `GET /health` and `POST /extract` (PaddleOCR for the table text, then
+Gemini or OpenAI to tidy it up). Set `USE_SAVED_RESPONSE=0` once it is running.
+
+Get it up in its own folder, outside this one:
+
+```bash
+git worktree add ../ocr-service --track origin/dev_sourav_docker
+cd ../ocr-service
+cp .env.example .env         # then add GOOGLE_API_KEY or OPENAI_API_KEY
+docker build -t ocr-table-api .
+docker run -d --name ocr-table-api -p 8000:8000 --env-file .env ocr-table-api
+curl http://localhost:8000/health
+```
+
+It needs a key of its own. `LLM_PROVIDER` is `gemini` by default, so set
+`GOOGLE_API_KEY`, or switch to `openai` and set `OPENAI_API_KEY`. The build is
+large, roughly 20 minutes the first time, because it pulls PaddleOCR,
+PaddlePaddle and TensorFlow.
 
 Watch the host name. The api runs inside a container, so `localhost` there means
 the container itself, not your machine. A backend running on your own machine is
