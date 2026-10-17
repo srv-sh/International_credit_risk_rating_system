@@ -11,6 +11,10 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
+  /* There is no dark theme. Declaring light-only stops Chrome/Edge "Auto
+     Dark Mode" from inverting the palette into something we never designed. */
+  color-scheme: only light;
+
   /* brand */
   --primary: #1d4ed8;
   --primary-ink: #ffffff;
@@ -160,14 +164,27 @@ a:hover { color: var(--primary-hover); }
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
-.brand-mark {
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  background: linear-gradient(145deg, var(--secondary), var(--primary) 55%, var(--primary-deep));
+/* The logo is a neon brain on black. Kept on its black ground as a rounded
+   dark tile, it reads as a deliberate app icon on the light UI instead of a
+   dark-mode asset that wandered in. */
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #06060f;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 45%),
-    0 2px 6px -1px rgb(29 78 216 / 45%);
+    inset 0 0 0 1px rgb(255 255 255 / 10%),
+    0 2px 8px -2px rgb(29 78 216 / 55%);
+  flex: none;
+}
+.brand-text { display: grid; line-height: 1.15; }
+.brand-text strong { font-size: 0.9375rem; font-weight: 700; letter-spacing: 0.02em; }
+.brand-text small {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--ink-faint);
+  letter-spacing: 0.01em;
 }
 
 .topbar-hint {
@@ -294,7 +311,7 @@ main { display: block; }
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-2);
-  padding: 18px;
+  padding: 20px;
   margin-bottom: 16px;
   transition: box-shadow 260ms var(--ease), transform 260ms var(--ease);
 }
@@ -350,12 +367,16 @@ fieldset.card legend {
 
 .split {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.9fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(340px, 1fr);
   gap: 16px;
   align-items: start;
 }
+/* Grid items default to min-width auto, so one wide control (a toolbar
+   group, a FROM dropdown) silently stretches the whole page. Let the
+   columns shrink; the inner .scroll wrappers take over from there. */
+.split > * { min-width: 0; }
 .split-side { position: sticky; top: calc(var(--nav-h) + 12px); }
-@media (max-width: 1080px) {
+@media (max-width: 1280px) {
   .split { grid-template-columns: 1fr; }
   .split-side { position: static; }
 }
@@ -820,15 +841,18 @@ button:disabled { opacity: 0.42; cursor: not-allowed; box-shadow: none; }
 
 /* ---------- flow footer ---------- */
 
+/* The step's Back/Continue bar. It used to sit at the bottom of the page,
+   where nobody noticed it; it now sits at the top of the step, under the
+   rail, sticky so it stays in reach while the tables scroll. */
 .flow-footer {
   position: sticky;
-  bottom: 0;
+  top: calc(var(--nav-h) + 8px);
   z-index: 30;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 18px -4px -4px;
-  padding: 13px 18px;
+  margin: 0 0 16px;
+  padding: 11px 16px;
   background: rgb(255 255 255 / 86%);
   backdrop-filter: saturate(180%) blur(14px);
   -webkit-backdrop-filter: saturate(180%) blur(14px);
@@ -843,7 +867,7 @@ button:disabled { opacity: 0.42; cursor: not-allowed; box-shadow: none; }
 /* ---------- tables ---------- */
 
 .scroll { overflow: auto; max-width: 100%; }
-.scroll-tall { max-height: 460px; }
+.scroll-tall { max-height: 560px; }
 
 table.data, .card.tight table {
   width: 100%;
@@ -852,7 +876,7 @@ table.data, .card.tight table {
 }
 table.data th, table.data td,
 .card.tight table th, .card.tight table td {
-  padding: 7px 11px;
+  padding: 9px 12px;
   text-align: left;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
@@ -911,6 +935,23 @@ table.data tr.missing:hover { background: #fdf0da; }
 .score-cell { display: inline-grid; gap: 3px; justify-items: end; min-width: 86px; }
 .score-bar { display: block; width: 100%; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
 .score-bar-fill { display: block; height: 100%; background: var(--primary); border-radius: 2px; }
+
+/* FROM column: a compact select so a value's source line is changeable in
+   place, without the row growing taller than its neighbours. */
+.from-select {
+  width: 100%;
+  min-width: 150px;
+  max-width: 240px;
+  min-height: 30px;
+  padding: 3px 7px;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.from-select:hover { border-color: var(--secondary); color: var(--ink); }
+tr.missing .from-select { border-color: #f2dcb4; background: #fffdf8; }
 
 .detail { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 0.8125rem; }
 .detail dt { color: var(--ink-faint); }
@@ -1022,13 +1063,34 @@ img.statement {
   background: var(--surface-sunk);
 }
 
+/* Numeric cells in the grid: right-aligned tabular figures, negatives red */
+.editable-table .cell-figure {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.editable-table .cell-negative { color: var(--danger); }
+
 .editable-table .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 8px 18px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--line);
   background: var(--surface-sunk);
+}
+/* Row ops and column ops wrap as groups, not as loose controls */
+.editable-table .toolbar-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.editable-table .toolbar-group + .toolbar-group {
+  padding-left: 18px;
+  border-left: 1px solid var(--line);
+}
+@media (max-width: 720px) {
+  .editable-table .toolbar-group + .toolbar-group { padding-left: 0; border-left: none; }
 }
 .editable-table .toolbar button {
   min-height: 32px;

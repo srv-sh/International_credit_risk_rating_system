@@ -49,6 +49,8 @@ export default function Graphs() {
         <p className="lede">The calculated rating, broken down by ratio and by category.</p>
       </div>
 
+      <FlowFooter />
+
       <Reveal className="headline">
         <RadialGauge
           value={result.quantitative_max ? result.quantitative_total / result.quantitative_max : 0}
@@ -93,7 +95,6 @@ export default function Graphs() {
         {figure.data && <Chart figure={figure.data} />}
       </Reveal>
 
-      <FlowFooter />
     </section>
   )
 }

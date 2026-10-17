@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { OcrResponse, RecordIds, ScoreResponse, SheetKey, StatementResult, Table } from '../api/types'
+import { numerifyTable } from '../lib/numbers'
 
 export interface UserInfo {
   name: string
@@ -58,9 +59,16 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       ...initial,
       setUser: (user) => set({ user }),
-      // New OCR results replace any earlier edits
-      setOcr: (ocr) => set({ ocr, tables: { bs: ocr.bs.table, is: ocr.is.table, cfs: ocr.cfs.table }, statements: {}, stale: {}, result: null }),
-      setTable: (sheet, table) => set((s) => ({ tables: { ...s.tables, [sheet]: table }, stale: { ...s.stale, [sheet]: !!s.statements[sheet] } })),
+      // New OCR results replace any earlier edits. Cells that are accounting
+      // numbers — "(1,234)", "1,234" — become real negatives/numbers here, so
+      // the tables hold values, not notation.
+      setOcr: (ocr) => set({
+        ocr,
+        tables: { bs: numerifyTable(ocr.bs.table), is: numerifyTable(ocr.is.table), cfs: numerifyTable(ocr.cfs.table) },
+        statements: {}, stale: {}, result: null,
+      }),
+      // Edits normalize the same way, so typing "(5,000)" stores -5000.
+      setTable: (sheet, table) => set((s) => ({ tables: { ...s.tables, [sheet]: numerifyTable(table) }, stale: { ...s.stale, [sheet]: !!s.statements[sheet] } })),
       setStatement: (sheet, result) => set((s) => ({ statements: { ...s.statements, [sheet]: result }, stale: { ...s.stale, [sheet]: false } })),
       setRecord: (key, id) => set((s) => ({ records: { ...s.records, [key]: id } })),
       setQualitativeAnswers: (qualitativeAnswers) => set({ qualitativeAnswers }),

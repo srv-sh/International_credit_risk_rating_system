@@ -19,8 +19,11 @@ export default function StepNav() {
     return (
       <header className="topbar is-bare">
         <span className="brand">
-          <span className="brand-mark" aria-hidden="true" />
-          Credit Risk Rating
+          <img className="brand-logo" src="/logo.jpg" alt="ONNESHX logo" />
+          <span className="brand-text">
+            <strong>ONNESHX</strong>
+            <small>Credit Risk Rating</small>
+          </span>
         </span>
       </header>
     )
@@ -32,8 +35,11 @@ export default function StepNav() {
     <header className="topbar">
       <div className="topbar-row">
         <span className="brand">
-          <span className="brand-mark" aria-hidden="true" />
-          Credit Risk Rating
+          <img className="brand-logo" src="/logo.jpg" alt="ONNESHX logo" />
+          <span className="brand-text">
+            <strong>ONNESHX</strong>
+            <small>Credit Risk Rating</small>
+          </span>
         </span>
         <p className="topbar-hint">{current.hint}</p>
       </div>

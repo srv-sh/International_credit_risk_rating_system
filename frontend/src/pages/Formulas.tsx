@@ -35,7 +35,15 @@ export default function Formulas() {
     : []
   const [selected, setSelected] = useState('')
   const [particular, setParticular] = useState('')
-  const current = allItems.find((i) => i.item === selected) ?? allItems[0]
+  const [showAll, setShowAll] = useState(false)
+
+  // The dictionary exists to fix items the matching could not find, so the
+  // picker only offers those. Fixing one shrinks the list and the selection
+  // falls through to the next missing item by itself. "Show all" is the
+  // escape hatch for retuning an item that did match.
+  const missingItems = allItems.filter(({ sheet: sk, item }) => !!statements[sk]?.missing.includes(item))
+  const pickable = showAll ? allItems : missingItems
+  const current = pickable.find((i) => i.item === selected) ?? pickable[0]
   const sheet = current?.sheet
   const result = sheet ? statements[sheet] : undefined
   const table = sheet ? tables[sheet] : undefined
@@ -83,10 +91,37 @@ export default function Formulas() {
   }
   const remove = (term: string) => recalc.mutate(currentTerms.filter((t) => t !== term))
 
+  /**
+   * Re-point one item at a single line, straight from the FROM column.
+   * Replaces the whole mapping with that line; combining several lines is
+   * what the dictionary is for.
+   */
+  const remap = useMutation({
+    mutationFn: async ({ sheet: sk, item, line }: { sheet: SheetKey; item: string; line: string }) => {
+      const r = statements[sk]
+      const tb = tables[sk]
+      if (!r || !tb) throw new Error('Calculate this statement first')
+      const mapping = { ...r.mapping, [item]: line ? [line] : [] }
+      return calculateStatement(sk, { table: tb, mapping, year_column: r.year_column })
+    },
+    onSuccess: (res) => setStatement(res.sheet, res),
+    onError: () => toast.push('error', 'Could not re-map that item.'),
+  })
+
+  // Lines available per sheet, for the FROM dropdowns
+  const particularsBySheet = Object.fromEntries(
+    (Object.keys(statements) as SheetKey[]).map((sk) => {
+      const tb = tables[sk]
+      if (!tb) return [sk, []]
+      const col = statements[sk]?.particulars_column ?? Object.keys(tb)[0]
+      return [sk, [...new Set(tb[col].map((p) => String(p ?? '').trim()).filter(Boolean))]]
+    }),
+  ) as Record<SheetKey, string[]>
+
   const categories = [...new Set(formulas.data?.map((f) => f.category))]
   const allValues = Object.values(statements).flatMap((s) =>
     Object.entries(s.values).map(([item, v]) => ({
-      item, v, missing: s.missing.includes(item), from: s.mapping[item],
+      sheet: s.sheet, item, v, missing: s.missing.includes(item), from: s.mapping[item],
     })))
   const missingTotal = allValues.filter((v) => v.missing).length
 
@@ -99,6 +134,17 @@ export default function Formulas() {
           Continue to turn these into the final rating.
         </p>
       </div>
+
+      <FlowFooter
+        busy={rate.isPending}
+        continueLabel={rate.isPending ? 'Calculating rating…' : 'Calculate rating'}
+        blockedBy={sheetsDone === 0 ? 'Calculate at least one statement first' : null}
+        onContinue={async () => {
+          await rate.mutateAsync()
+          return true
+        }}
+      />
+      <ErrorBox error={rate.error} />
 
       <div className="stat-row">
         <div className="stat">
@@ -167,15 +213,27 @@ export default function Formulas() {
               statement straight away.
             </p>
             <ErrorBox error={itemsQuery.error} />
+            <label className="checkbox">
+              <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
+              <span>
+                Show all items
+                <small>Off: only the {missingItems.length} still missing</small>
+              </span>
+            </label>
+            {!current && (
+              <p className="hint">
+                Every item has a value. Tick "Show all items" to retune one that already matched.
+              </p>
+            )}
             {current && (
               <>
                 <label className="field">
-                  <span>Item</span>
+                  <span>Item{!showAll && ` (${missingItems.length} missing)`}</span>
                   <select
                     value={current.item}
                     onChange={(e) => { setSelected(e.target.value); setParticular('') }}
                   >
-                    {allItems.map((i) => <option key={i.item} value={i.item}>{i.item}</option>)}
+                    {pickable.map((i) => <option key={i.item} value={i.item}>{i.item}</option>)}
                   </select>
                   <small>{SHEET_NAMES[current.sheet]}</small>
                 </label>
@@ -238,13 +296,32 @@ export default function Formulas() {
               <table className="data">
                 <thead><tr><th>Item</th><th className="num">Value</th><th>From</th></tr></thead>
                 <tbody>
-                  {allValues.map(({ item, v, missing, from }) => (
-                    <tr key={item} className={missing ? 'missing' : ''}>
-                      <td>{item}</td>
-                      <td className="num">{v.toLocaleString()}</td>
-                      <td className="from">{from?.join(' + ') || <em>not found</em>}</td>
-                    </tr>
-                  ))}
+                  {allValues.map(({ sheet: sk, item, v, missing, from }) => {
+                    const lines = particularsBySheet[sk] ?? []
+                    const single = from?.length === 1 ? from[0] : null
+                    return (
+                      <tr key={item} className={missing ? 'missing' : ''}>
+                        <td>{item}</td>
+                        <td className="num">{v.toLocaleString()}</td>
+                        <td className="from">
+                          <select
+                            className="from-select"
+                            aria-label={`Line ${item} is read from`}
+                            disabled={remap.isPending}
+                            value={from && from.length > 1 ? '__multi__' : single ?? ''}
+                            onChange={(e) => {
+                              if (e.target.value !== '__multi__') remap.mutate({ sheet: sk, item, line: e.target.value })
+                            }}
+                          >
+                            {from && from.length > 1 && <option value="__multi__">{from.join(' + ')}</option>}
+                            <option value="">not mapped</option>
+                            {single && !lines.includes(single) && <option value={single}>{single}</option>}
+                            {lines.map((p) => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -252,16 +329,6 @@ export default function Formulas() {
         </aside>
       </div>
 
-      <ErrorBox error={rate.error} />
-      <FlowFooter
-        busy={rate.isPending}
-        continueLabel={rate.isPending ? 'Calculating rating…' : 'Calculate rating'}
-        blockedBy={sheetsDone === 0 ? 'Calculate at least one statement first' : null}
-        onContinue={async () => {
-          await rate.mutateAsync()
-          return true
-        }}
-      />
     </section>
   )
 }

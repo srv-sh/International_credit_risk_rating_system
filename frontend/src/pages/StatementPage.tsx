@@ -46,6 +46,16 @@ export default function StatementPage({ sheet, title }: Props) {
     onError: () => toast.push('error', `${title} could not be calculated.`),
   })
 
+  /** Re-point one item at a single line, straight from the FROM column. */
+  const remap = useMutation({
+    mutationFn: async ({ item, line }: { item: string; line: string }) => {
+      const mapping = { ...result!.mapping, [item]: line ? [line] : [] }
+      return calculateStatement(sheet, { table: table!, mapping, year_column: result!.year_column })
+    },
+    onSuccess: (res) => setStatement(sheet, res),
+    onError: () => toast.push('error', 'Could not re-map that item.'),
+  })
+
   if (!table) {
     return (
       <section className="page">
@@ -57,6 +67,10 @@ export default function StatementPage({ sheet, title }: Props) {
   const valueColumns = Object.keys(table).slice(1)
   const items = result ? Object.entries(result.values) : []
   const missingCount = result?.missing.length ?? 0
+
+  // Lines available for the FROM dropdowns
+  const particularsCol = result?.particulars_column ?? Object.keys(table)[0]
+  const particulars = [...new Set(table[particularsCol].map((p) => String(p ?? '').trim()).filter(Boolean))]
 
   /*
    * A statement where nearly everything is missing still produces a rating,
@@ -101,6 +115,8 @@ export default function StatementPage({ sheet, title }: Props) {
           then calculate.
         </p>
       </div>
+
+      <FlowFooter blockedBy={result ? null : `Calculate the ${title.toLowerCase()} to continue`} />
 
       {columnWarning && (
         <div className="alert warn" role="status">
@@ -164,12 +180,27 @@ export default function StatementPage({ sheet, title }: Props) {
                   <tbody>
                     {items.map(([item, value]) => {
                       const absent = result.missing.includes(item)
+                      const from = result.mapping[item]
+                      const single = from?.length === 1 ? from[0] : null
                       return (
                         <tr key={item} className={absent ? 'missing' : ''}>
                           <td>{item}</td>
                           <td className="num">{value.toLocaleString()}</td>
                           <td className="from">
-                            {result.mapping[item]?.join(' + ') || <em>not found</em>}
+                            <select
+                              className="from-select"
+                              aria-label={`Line ${item} is read from`}
+                              disabled={remap.isPending}
+                              value={from && from.length > 1 ? '__multi__' : single ?? ''}
+                              onChange={(e) => {
+                                if (e.target.value !== '__multi__') remap.mutate({ item, line: e.target.value })
+                              }}
+                            >
+                              {from && from.length > 1 && <option value="__multi__">{from.join(' + ')}</option>}
+                              <option value="">not mapped</option>
+                              {single && !particulars.includes(single) && <option value={single}>{single}</option>}
+                              {particulars.map((p) => <option key={p} value={p}>{p}</option>)}
+                            </select>
                           </td>
                         </tr>
                       )
@@ -188,7 +219,6 @@ export default function StatementPage({ sheet, title }: Props) {
         </aside>
       </div>
 
-      <FlowFooter blockedBy={result ? null : `Calculate the ${title.toLowerCase()} to continue`} />
     </section>
   )
 }
