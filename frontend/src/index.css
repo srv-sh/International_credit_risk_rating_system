@@ -139,11 +139,11 @@ a:hover { color: var(--primary-hover); }
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgb(255 255 255 / 82%);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  border-bottom: 1px solid rgb(198 210 230 / 60%);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 70%) inset, 0 6px 20px -12px rgb(12 20 39 / 25%);
+  /* Fully opaque: content scrolling underneath must never show through
+     the step labels. */
+  background: var(--surface);
+  border-bottom: 1px solid var(--line-strong);
+  box-shadow: 0 6px 20px -12px rgb(12 20 39 / 25%);
 }
 
 .topbar-row,
@@ -715,6 +715,12 @@ select { cursor: pointer; }
 .checkbox input { width: 16px; height: 16px; min-height: 0; margin-top: 2px; flex: none; accent-color: var(--primary); cursor: pointer; }
 .checkbox small { display: block; color: var(--ink-faint); font-size: 0.75rem; }
 
+/* Variant for card heads: sits on the row, no stacked helper text */
+.checkbox.checkbox-inline { margin: 0; align-items: center; font-size: 0.8125rem; color: var(--ink-soft); white-space: nowrap; }
+.checkbox.checkbox-inline input { margin-top: 0; }
+.card-head .checkbox-inline { margin-left: auto; }
+.card-head .checkbox-inline + .pill { margin-left: 0; }
+
 .inline-controls { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 
 /* ---------- buttons ---------- */
@@ -853,12 +859,10 @@ button:disabled { opacity: 0.42; cursor: not-allowed; box-shadow: none; }
   gap: 10px;
   margin: 0 0 16px;
   padding: 11px 16px;
-  background: rgb(255 255 255 / 86%);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  border: 1px solid rgb(198 210 230 / 70%);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-3), inset 0 1px 0 rgb(255 255 255 / 80%);
+  box-shadow: var(--shadow-2);
 }
 .flow-footer-left { flex: none; }
 .flow-footer-right { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
@@ -1022,35 +1026,57 @@ tr.missing .from-select { border-color: #f2dcb4; background: #fffdf8; }
 
 /* ---------- formulas ---------- */
 
-.formula-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1px; background: var(--line); }
-.formula {
-  position: relative;
-  background: var(--surface);
-  padding: 15px;
+/* One ratio per full-width row: who it is, the formula with room to be
+   itself, and the outcome. Tiling these in half a column meant every
+   formula scrolled inside its own little box, which was the complaint. */
+.formula-rows { display: grid; }
+.formula-row {
   display: grid;
-  gap: 8px;
-  align-content: start;
-  transition: background 220ms var(--ease), box-shadow 220ms var(--ease);
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.5fr) minmax(230px, auto);
+  gap: 8px 28px;
+  align-items: center;
+  padding: 16px 22px;
+  background: var(--surface);
+  transition: background 200ms var(--ease);
 }
-.formula:hover { background: #fbfcff; z-index: 1; box-shadow: var(--shadow-2); }
-.formula header { display: grid; gap: 1px; }
+.formula-row + .formula-row { border-top: 1px solid var(--line); }
+.formula-row:hover { background: #fbfcff; }
+.formula-row header { display: grid; gap: 2px; align-content: center; }
 .formula-meta { font-size: 0.6875rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.045em; }
-.formula-math { overflow-x: auto; font-size: 0.875rem; color: var(--ink-soft); }
-.formula-math .katex-display { margin: 0; }
+
+.formula-math { overflow-x: auto; font-size: 0.9375rem; color: var(--ink-soft); }
+.formula-math .katex-display { margin: 0; text-align: left; }
+.formula-math .katex-display > .katex { text-align: left; }
+
 .formula-result {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding-top: 8px;
-  border-top: 1px solid var(--line);
+  gap: 10px;
+  justify-content: flex-end;
+  white-space: nowrap;
 }
 .formula-value { font-family: var(--mono); font-size: 0.875rem; font-weight: 500; font-variant-numeric: tabular-nums; }
-.formula-score { margin-left: auto; font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-.formula.band-excellent { box-shadow: inset 3px 0 0 var(--band-excellent); }
-.formula.band-good { box-shadow: inset 3px 0 0 var(--band-good); }
-.formula.band-marginal { box-shadow: inset 3px 0 0 var(--band-marginal); }
-.formula.band-unacceptable { box-shadow: inset 3px 0 0 var(--band-unacceptable); }
+.formula-score { font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.formula-row.band-excellent { box-shadow: inset 3px 0 0 var(--band-excellent); }
+.formula-row.band-good { box-shadow: inset 3px 0 0 var(--band-good); }
+.formula-row.band-marginal { box-shadow: inset 3px 0 0 var(--band-marginal); }
+.formula-row.band-unacceptable { box-shadow: inset 3px 0 0 var(--band-unacceptable); }
+
+@media (max-width: 980px) {
+  .formula-row { grid-template-columns: 1fr; gap: 10px; }
+  .formula-result { justify-content: flex-start; }
+}
+
+/* Dictionary and input values, shoulder to shoulder under the formulas */
+.duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.duo > * { min-width: 0; }
+@media (max-width: 1100px) { .duo { grid-template-columns: 1fr; } }
 
 /* ---------- misc ---------- */
 
