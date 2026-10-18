@@ -1,0 +1,16 @@
+.venv
+augmented_images
+images
+saved_images
+test2.py
+source/__pycache__
+input
+
+.env
+
+node_modules/
+__pycache__/
+
+# local training data, not part of the app
+Table Extraction.v5i.yolov8/
+Table Extraction.v5i.yolov8.zip
