@@ -57,3 +57,8 @@ npm --prefix frontend run build
 - Set `USE_SAVED_RESPONSE=1` to run without live OCR/LLM calls.
 - Set `USE_SAVED_RESPONSE=0` and provide `OPENAI_API_KEY` when using live extraction.
 - Inside containers, the API talks to OCR at `http://ocr:8000`.
+
+## License
+Copyright (c) 2026 Sourav Saha, Team ONNESHX. All rights reserved.
+ 
+This is proprietary software. The source code is visible for review and evaluation only. Copying, modifying, distributing, or using it in any product or service requires prior written permission. See the [LICENSE](LICENSE) file for details.
