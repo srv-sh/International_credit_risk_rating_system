@@ -71,6 +71,16 @@ export default function Home() {
         </p>
       </div>
 
+      <FlowFooter
+        blockedBy={blockedBy}
+        busy={ocr.isPending}
+        continueLabel={ocr.isPending ? 'Extracting…' : 'Extract statements'}
+        onContinue={async () => {
+          await ocr.mutateAsync()
+          return true
+        }}
+      />
+
       <fieldset className="card">
         <legend>Applicant</legend>
         <div className="form-grid">
@@ -139,15 +149,6 @@ export default function Home() {
         </div>
       ) : <ErrorBox error={ocr.error} />)}
 
-      <FlowFooter
-        blockedBy={blockedBy}
-        busy={ocr.isPending}
-        continueLabel={ocr.isPending ? 'Extracting…' : 'Extract statements'}
-        onContinue={async () => {
-          await ocr.mutateAsync()
-          return true
-        }}
-      />
     </section>
   )
 }

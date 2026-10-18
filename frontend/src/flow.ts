@@ -27,7 +27,7 @@ export const STEPS: Step[] = [
   { id: 'is', path: '/income-sheet', label: 'Income statement', short: 'Income statement', hint: 'Check the extracted income statement, then calculate it' },
   { id: 'cfs', path: '/cashflow-sheet', label: 'Cash flow', short: 'Cash flow', hint: 'Check the extracted cash flow statement, then calculate it' },
   { id: 'weights', path: '/weights', label: 'Weights', short: 'Weights', hint: 'Points each indicator can earn, and the points per band' },
-  { id: 'formulas', path: '/formulas', label: 'Indicators', short: 'Indicators', hint: 'Ratio formulas, the values behind them, and the dictionary' },
+  { id: 'formulas', path: '/formulas', label: 'Indicators', short: 'Indicators', hint: 'The values behind each ratio, and the scored formulas' },
   { id: 'graphs', path: '/graphs', label: 'Analysis', short: 'Analysis', hint: 'Charts for the calculated rating' },
   { id: 'summary', path: '/summary', label: 'Summary', short: 'Summary', hint: 'The complete rating and every input behind it' },
 ]

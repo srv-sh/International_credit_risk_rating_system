@@ -58,6 +58,16 @@ export default function Indicators() {
         </p>
       </div>
 
+      <FlowFooter>
+        {dirty && <p className="flow-note">Unsaved changes</p>}
+        <button type="button" className="ghost" disabled={!dirty} onClick={() => query.data && setRows(query.data)}>
+          Discard
+        </button>
+        <button type="button" className="secondary" disabled={!dirty || save.isPending} onClick={() => save.mutate(rows)}>
+          {save.isPending ? 'Saving…' : 'Save weights'}
+        </button>
+      </FlowFooter>
+
       <div className="stat-row">
         <div className="stat">
           <span>Total points available</span>
@@ -125,15 +135,6 @@ export default function Indicators() {
         </div>
       </div>
 
-      <FlowFooter>
-        {dirty && <p className="flow-note">Unsaved changes</p>}
-        <button type="button" className="ghost" disabled={!dirty} onClick={() => query.data && setRows(query.data)}>
-          Discard
-        </button>
-        <button type="button" className="secondary" disabled={!dirty || save.isPending} onClick={() => save.mutate(rows)}>
-          {save.isPending ? 'Saving…' : 'Save weights'}
-        </button>
-      </FlowFooter>
     </section>
   )
 }

@@ -110,6 +110,20 @@ export default function Summary() {
         </p>
       </div>
 
+      <FlowFooter>
+        <button type="button" className="ghost" onClick={exportCsv}>Export CSV</button>
+        <button type="button" className="ghost" onClick={() => window.print()}>Print</button>
+        {confirming ? (
+          <>
+            <p className="flow-note">Clear this rating and start again?</p>
+            <button type="button" className="ghost" onClick={() => setConfirming(false)}>Cancel</button>
+            <button type="button" className="danger" onClick={startOver}>Discard and restart</button>
+          </>
+        ) : (
+          <button type="button" className="secondary" onClick={() => setConfirming(true)}>Start over</button>
+        )}
+      </FlowFooter>
+
       {staleSheets.length > 0 && (
         <div className="alert warn" role="status">
           Edited after this rating was calculated:{' '}
@@ -305,20 +319,6 @@ export default function Summary() {
           )}
         </aside>
       </div>
-
-      <FlowFooter>
-        <button type="button" className="ghost" onClick={exportCsv}>Export CSV</button>
-        <button type="button" className="ghost" onClick={() => window.print()}>Print</button>
-        {confirming ? (
-          <>
-            <p className="flow-note">Clear this rating and start again?</p>
-            <button type="button" className="ghost" onClick={() => setConfirming(false)}>Cancel</button>
-            <button type="button" className="danger" onClick={startOver}>Discard and restart</button>
-          </>
-        ) : (
-          <button type="button" className="secondary" onClick={() => setConfirming(true)}>Start over</button>
-        )}
-      </FlowFooter>
     </section>
   )
 }

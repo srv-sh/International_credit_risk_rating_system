@@ -62,7 +62,19 @@ export default function EditableTable({ table, onChange, height = 600 }: Props) 
   const [renameTo, setRenameTo] = useState('')
 
   const colDefs = useMemo<ColDef<Row>[]>(
-    () => columns.map((c, i) => ({ field: c, headerName: c, editable: true, pinned: i === 0 ? 'left' : undefined, flex: i === 0 ? 2 : 1 })),
+    () => columns.map((c, i) => ({
+      field: c,
+      headerName: c,
+      editable: true,
+      pinned: i === 0 ? 'left' : undefined,
+      flex: i === 0 ? 2 : 1,
+      // Cells that are numbers read as figures: right-aligned, tabular,
+      // negatives in red. Strings (line names, notes, headers) stay left.
+      cellClassRules: {
+        'cell-figure': (p) => typeof p.value === 'number',
+        'cell-negative': (p) => typeof p.value === 'number' && p.value < 0,
+      },
+    })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [columns.join('\u0000')],
   )
@@ -102,20 +114,26 @@ export default function EditableTable({ table, onChange, height = 600 }: Props) 
   return (
     <div className="editable-table">
       <div className="toolbar">
-        <button onClick={insertRow}>{selectedRow === null ? 'Add row' : `Insert row after ${selectedRow}`}</button>
-        <button onClick={deleteRow} disabled={selectedRow === null}>Delete row</button>
-        <input placeholder="New column name" value={newColumn} maxLength={30} onChange={(e) => setNewColumn(e.target.value)} />
-        <button onClick={addColumn} disabled={!newColumn.trim()}>Add column</button>
-        <select value="" onChange={(e) => e.target.value && deleteColumn(e.target.value)}>
-          <option value="">Delete column…</option>
-          {columns.slice(1).map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select value={renameFrom} onChange={(e) => setRenameFrom(e.target.value)}>
-          <option value="">Rename column…</option>
-          {columns.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <input placeholder="New name" value={renameTo} maxLength={30} onChange={(e) => setRenameTo(e.target.value)} />
-        <button onClick={renameColumn} disabled={!renameFrom || !renameTo.trim() || columns.includes(renameTo.trim())}>Rename</button>
+        <div className="toolbar-group" role="group" aria-label="Rows">
+          <button onClick={insertRow}>{selectedRow === null ? 'Add row' : `Insert row after ${selectedRow}`}</button>
+          <button onClick={deleteRow} disabled={selectedRow === null}>Delete row</button>
+        </div>
+        <div className="toolbar-group" role="group" aria-label="Add or delete columns">
+          <input placeholder="New column name" value={newColumn} maxLength={30} onChange={(e) => setNewColumn(e.target.value)} />
+          <button onClick={addColumn} disabled={!newColumn.trim()}>Add column</button>
+          <select value="" onChange={(e) => e.target.value && deleteColumn(e.target.value)}>
+            <option value="">Delete column…</option>
+            {columns.slice(1).map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className="toolbar-group" role="group" aria-label="Rename a column">
+          <select value={renameFrom} onChange={(e) => setRenameFrom(e.target.value)}>
+            <option value="">Rename column…</option>
+            {columns.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <input placeholder="New name" value={renameTo} maxLength={30} onChange={(e) => setRenameTo(e.target.value)} />
+          <button onClick={renameColumn} disabled={!renameFrom || !renameTo.trim() || columns.includes(renameTo.trim())}>Rename</button>
+        </div>
       </div>
       <div style={{ height }}>
         <AgGridReact<Row>
