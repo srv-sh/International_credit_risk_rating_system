@@ -1,4 +1,15 @@
 services:
+  ocr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     environment:
@@ -40,17 +51,12 @@ services:
     environment:
       DB_API_URL: http://db_api:8001
       CORS_ORIGINS: http://localhost:8080
-      # The OCR service runs outside this compose file. "localhost" here would
-      # mean this container, not your machine, so default to the host gateway.
-      # Set BACKEND_URL in .env to point somewhere else.
-      BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal:8000}
-    # host.docker.internal exists by default on Docker Desktop but not on Linux
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      BACKEND_URL: http://ocr:8000
     ports:
       - "8002:8002"
     depends_on:
       - db_api
+      - ocr
     restart: unless-stopped
 
   frontend:
