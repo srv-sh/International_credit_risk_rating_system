@@ -1,6 +1,6 @@
 # Slide 01: Team Details
 
-**Team Name:** [Your Team Name]  
+**Team Name:** OnneshX  
 **Team Leader Name:** [Leader Name]  
 **Problem Statement:**  
 Manual credit analysis is slow, error-prone, and highly repetitive. Financial statements arrive in scanned images or PDFs, and analysts must extract values, verify them, compute ratios, and prepare a credit view. This project automates that entire journey.
